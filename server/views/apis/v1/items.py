@@ -10,10 +10,10 @@
     :license: see LICENSE for more details.
 """
 
-from flask import render_template
+from flask import render_template, Response
 from flask.views import MethodView
 from views import rest_api
-from api import item
+from api import item, mimetype, download
 
 class Items(MethodView):
     @rest_api
@@ -28,28 +28,29 @@ class Item(MethodView):
 class Metadata(MethodView):
     @rest_api
     def get(self, iid):
-        items.get(iid)
-        pass
+        return item(iid)['metadata']
 
 class Reviews(MethodView):
     @rest_api
-    def get(self):
-        pass
+    def get(self, iid):
+        return item(iid)['reviews']
 
 class Files(MethodView):
     @rest_api
-    def get(self):
-        pass
+    def get(self, iid):
+        return item(iid)['files']
 
 class File(MethodView):
-    def get(self):
-        # set return type
-        pass
+    def get(self, iid, filename):
+        """Download the specified file
+        """
+        return Response(download(iid, filename),
+                        mimetype=mimetype(filename))
 
 urls = (
     '/<iid>/metadata', Metadata,
     '/<iid>/reviews', Reviews,
-    '/<iid>/files/:filename', File,
+    '/<iid>/files/<filename>', File,
     '/<iid>/files', Files,
     '/<iid>', Item,
     '', Items

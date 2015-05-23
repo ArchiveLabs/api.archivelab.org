@@ -11,6 +11,7 @@
     :license: see LICENSE for more details.
 """
 
+import sys
 import json
 from werkzeug import wrappers
 from flask import render_template, Response
@@ -34,10 +35,12 @@ def rest_api(f):
                     return res
                 response = Response(json.dumps(res))
             except Exception as e:
-                response = Response(json.dumps(e.__dict__))
+                response = Response(json.dumps({
+                            "error": "%s: %s"
+                            % (e.__class__.__name__, str(e))
+                            }))
 
             response.headers.add('Content-Type', 'application/json')
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
             return response
         finally:
             #DB Rollbacks to protect against inconsistent states

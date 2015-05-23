@@ -35,3 +35,5 @@ HOST = config.getdef("server", "host", '0.0.0.0')
 PORT = int(config.getdef("server", "port", 8080))
 DEBUG = bool(int(config.getdef("server", "debug", 1)))
 options = {'debug': DEBUG, 'host': HOST, 'port': PORT}
+
+API_BASEURL = config.getdef("api", "baseurl", "https://archive.org")

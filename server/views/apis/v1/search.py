@@ -17,8 +17,9 @@ from api import search
 
 class Search(MethodView):
     @rest_api
-    def get(self, query=""):
+    def get(self):
         i = request.args
+        query = i.get('q', '')
         limit = i.get('limit', 50)
-        page = i.get('page', 0)
+        page = i.get('page', 1)
         return search(query, page=page, limit=limit)

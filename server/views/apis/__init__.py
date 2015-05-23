@@ -13,7 +13,7 @@
 from flask import render_template, request
 from flask.views import MethodView
 from views import rest_api
-from views.apis.v1 import items, search
+from views.apis.v1 import items, collections, search, wayback
 from util import domain
 
 class Endpoints(MethodView):
@@ -26,9 +26,9 @@ class Endpoints(MethodView):
 
 urls = (
     '/items', items,
-    '/search/<query>', search.Search,
-    #'/collections', None,
-    #'/snapshots', None,
+    '/search', search.Search,
+    '/collections', collections,
+    '/snapshots', wayback,
     '/', Endpoints,
     )
 
