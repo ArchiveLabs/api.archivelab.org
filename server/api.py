@@ -51,9 +51,15 @@ def snapshot(url, timestamp=None):
     return requests.get("%s/wayback/available?url=%s"
                         % (API_BASEURL, url)).json()
 
-def collections(page=1, limit=100):
-    q = "mediatype:collection%20AND%20NOT%20identifier:fav-*"
-    return search(q, page=page, limit=limit)
+def collections(collection_id=None, page=1, limit=100):
+    if collection_id:
+        q = "collection:(wb_urls)"
+    else:
+        q = "mediatype:collection AND NOT identifier:fav-*"
+    r = search(q, page=page, limit=limit)['response']
+    r['limit'] = limit
+    r['next'] = r['start'] + limit + 1
+    return r
 
 def search(query, page=1, limit=100):
     if int(limit) > 1000:
