@@ -13,7 +13,6 @@
 from flask import request, redirect
 from flask.views import MethodView
 from views import rest_api
-import items
 from api import collections #, collection
 
 class Collections(MethodView):

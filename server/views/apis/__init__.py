@@ -20,8 +20,8 @@ class Endpoints(MethodView):
     @rest_api
     def get(self, uri=None):      
         urlbase = request.url_root[:-1]
-        return dict([(urlbase + urls[i],
-                      urls[i+1].__name__.split(".")[-1].capitalize())
+        return dict([(urls[i+1].__name__.split(".")[-1].lower(),
+                      urlbase + urls[i])
                      for i in range(len(urls))[::2]])
 
 urls = (
