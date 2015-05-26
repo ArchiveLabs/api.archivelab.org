@@ -33,7 +33,7 @@ def item(iid):
 
 def items(page=1, limit=100):
     # Use the query "(*:*)" to return all indexed items.
-    r = search('(*:*)', page=page, limit=limit)
+    r = search('all:1', page=page, limit=limit)
     items = []
     for doc in r.get('response', {}).get('docs', []):
         items.append(doc['identifier'])
