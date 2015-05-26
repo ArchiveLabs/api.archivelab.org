@@ -38,8 +38,7 @@ def item(iid):
 
 
 def items(page=1, limit=100):
-    # Use the query "(*:*)" to return all indexed items.
-    items = search('(*:*)', page=page, limit=limit)
+    items = search('all:1', page=page, limit=limit)
     items['docs'] = [i['identifier'] for i in items['docs']]
     return items
 
