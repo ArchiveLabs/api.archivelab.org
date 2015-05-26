@@ -18,26 +18,30 @@ from configs import API_BASEURL
 class MaxLimitException(Exception):
     pass
 
+
 class InvalidJSONException(Exception):
     pass
+
 
 def mimetype(f):
     return mimetypes.guess_type(f)[0]
 
+
 def item(iid):
     try:
-        return requests.get('%s/details/%s' % (API_BASEURL, iid),
-                            params={"output": "json"}).json()
+        i = requests.get('%s/details/%s' % (API_BASEURL, iid),
+                         params={"output": "json"}).json()
+        i['url'] = '%s/details/%s' % (API_BASEURL, iid)
+        return i
     except ValueError as v:
         return v
 
+
 def items(page=1, limit=100):
-    # Use the query "(*:*)" to return all indexed items.
-    r = search('all:1', page=page, limit=limit)
-    items = []
-    for doc in r.get('response', {}).get('docs', []):
-        items.append(doc['identifier'])
+    items = search('all:1', page=page, limit=limit)
+    items['docs'] = [i['identifier'] for i in items['docs']]
     return items
+
 
 def download(iid, filename):
     r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
@@ -51,6 +55,7 @@ def download(iid, filename):
             f += chunk
     return f
 
+
 def snapshot(url, timestamp=None):
     """
     http://web.archive.org/web/timemap/link/{URI-R}
@@ -59,23 +64,25 @@ def snapshot(url, timestamp=None):
     return requests.get("%s/wayback/available?url=%s"
                         % (API_BASEURL, url)).json()
 
+
 def collections(collection_id=None, page=1, limit=100):
     if collection_id:
         q = "collection:(wb_urls)"
     else:
         q = "mediatype:collection AND NOT identifier:fav-*"
-    r = search(q, page=page, limit=limit)['response']
-    r['limit'] = limit
-    r['next'] = r['start'] + limit + 1
-    return r
+    return search(q, page=page, limit=limit)
+
 
 def search(query, page=1, limit=100):
     if int(limit) > 1000:
         raise MaxLimitException("Limit may not exceed 1000.")
-    return requests.get('%s/advancedsearch.php' % API_BASEURL,
-                        params={'q': query,
-                                'rows': limit,
-                                'page': page,
-                                'fl[]': 'identifier',
-                                'output': 'json'
-                                }).json()
+    r = requests.get('%s/advancedsearch.php' % API_BASEURL,
+                     params={'q': query,
+                             'rows': limit,
+                             'page': page,
+                             'fl[]': 'identifier',
+                             'output': 'json'
+                             }).json()['response']
+    r['limit'] = limit
+    r['next'] = r['start'] + limit + 1
+    return r
