@@ -10,15 +10,18 @@
     :license: see LICENSE for more details.
 """
 
-from flask import render_template, Response
+from flask import render_template, Response, request
 from flask.views import MethodView
 from views import rest_api
-from api import item, mimetype, download
+from api import items, item, mimetype, download
 
 class Items(MethodView):
     @rest_api
     def get(self):
-        return []
+        i = request.args
+        limit = i.get('limit', 50)
+        page = i.get('page', 1)
+        return items(page, limit)
 
 class Item(MethodView):
     @rest_api

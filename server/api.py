@@ -31,6 +31,14 @@ def item(iid):
     except ValueError as v:
         return v
 
+def items(page=1, limit=100):
+    # Use the query "(*:*)" to return all indexed items.
+    r = search('(*:*)', page=page, limit=limit)
+    items = []
+    for doc in r.get('response', {}).get('docs', []):
+        items.append(doc['identifier'])
+    return items
+
 def download(iid, filename):
     r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
                      stream=True, allow_redirects=True)
@@ -71,6 +79,3 @@ def search(query, page=1, limit=100):
                                 'fl[]': 'identifier',
                                 'output': 'json'
                                 }).json()
-
-    
-
