@@ -37,6 +37,14 @@ def items(iid=None, page=1, limit=100):
     #items['docs'] = [i['identifier'] for i in items['docs']]
 
 
+def item(iid):
+    try:
+        return requests.get('%s/details/%s' % (API_BASEURL, iid),
+                            params={"output": "json"}).json()
+    except ValueError as v:
+        return v
+
+
 def download(iid, filename):
     r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
                      stream=True, allow_redirects=True)
