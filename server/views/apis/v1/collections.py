@@ -12,13 +12,14 @@
 
 from flask import request, redirect
 from flask.views import MethodView
-from views import rest_api
+from views import rest_api, paginate
 from api import collections #, collection
 
 class Collections(MethodView):
     @rest_api
-    def get(self):
-        return collections()
+    @paginate()
+    def get(self, page=1, limit=100):
+        return collections(page=page, limit=limit)
 
 class Collection(MethodView):
     @rest_api

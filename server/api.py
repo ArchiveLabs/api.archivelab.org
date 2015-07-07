@@ -27,33 +27,23 @@ def mimetype(f):
     return mimetypes.guess_type(f)[0]
 
 
-def item(iid):
-    try:
-        i = requests.get('%s/details/%s' % (API_BASEURL, iid),
-                         params={"output": "json"}).json()
-        i['url'] = '%s/details/%s' % (API_BASEURL, iid)
-        return i
-    except ValueError as v:
-        return v
-
-
-def items(page=1, limit=100):
-    items = search('all:1', page=page, limit=limit)
-    items['docs'] = [i['identifier'] for i in items['docs']]
-    return items
+def items(iid=None, page=1, limit=100):
+    # aaron's idea: Weekly dump of ID of all identifiers (gzip)
+    # elastic search query w/ paging
+    if iid:
+        return item(iid)
+    # 'all:1' also works
+    return search("NOT identifier:..*", page=page, limit=limit)
+    #items['docs'] = [i['identifier'] for i in items['docs']]
 
 
 def download(iid, filename):
     r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
                      stream=True, allow_redirects=True)
-    f = ""
     if not r.ok:
         return None # raise exception
 
-    for chunk in r.iter_content(chunk_size=1024):
-        if chunk:
-            f += chunk
-    return f
+    return r.iter_content(chunk_size=1024)
 
 
 def snapshot(url, timestamp=None):
@@ -76,13 +66,10 @@ def collections(collection_id=None, page=1, limit=100):
 def search(query, page=1, limit=100):
     if int(limit) > 1000:
         raise MaxLimitException("Limit may not exceed 1000.")
-    r = requests.get('%s/advancedsearch.php' % API_BASEURL,
-                     params={'q': query,
-                             'rows': limit,
-                             'page': page,
-                             'fl[]': 'identifier',
-                             'output': 'json'
-                             }).json()['response']
-    r['limit'] = limit
-    r['next'] = r['start'] + limit + 1
-    return r
+    return requests.get('%s/advancedsearch.php' % API_BASEURL,
+                        params={'q': query,
+                                'rows': limit,
+                                'page': page,
+                                'fl[]': 'identifier',
+                                'output': 'json'
+                                }).json()

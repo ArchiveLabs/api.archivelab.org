@@ -12,36 +12,39 @@
 
 from flask import render_template, Response, request
 from flask.views import MethodView
-from views import rest_api
-from api import items, item, mimetype, download
+from views import rest_api, paginate
+from api import item, items, mimetype, download
 
 class Items(MethodView):
     @rest_api
-    def get(self):
-        i = request.args
-        limit = i.get('limit', 50)
-        page = i.get('page', 1)
-        return items(page, limit)
+    @paginate()
+    def get(self, page=1, limit=100):
+        return items(page=page, limit=limit)
+
 
 class Item(MethodView):
     @rest_api
     def get(self, iid):
         return item(iid)
 
+
 class Metadata(MethodView):
     @rest_api
     def get(self, iid):
         return item(iid)['metadata']
+
 
 class Reviews(MethodView):
     @rest_api
     def get(self, iid):
         return item(iid)['reviews']
 
+
 class Files(MethodView):
     @rest_api
     def get(self, iid):
         return item(iid)['files']
+
 
 class File(MethodView):
     def get(self, iid, filename):
@@ -49,6 +52,7 @@ class File(MethodView):
         """
         return Response(download(iid, filename),
                         mimetype=mimetype(filename))
+
 
 urls = (
     '/<iid>/metadata', Metadata,

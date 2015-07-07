@@ -14,7 +14,7 @@
 import sys
 import json
 from werkzeug import wrappers
-from flask import render_template, Response
+from flask import render_template, Response, request
 from flask.views import MethodView
 
 class Base(MethodView):
@@ -24,6 +24,18 @@ class Base(MethodView):
 class Partial(MethodView):
     def get(self, partial):
         return render_template('partials/%s.html' % partial)
+
+def paginate(page=1, limit=100):
+    def outer(f):
+        def inner(*args, **kwargs):
+            _page = request.args.get('page', page)
+            _limit = request.args.get('limit', limit)
+            r = f(*args, page=_page, limit=_limit, **kwargs)['response']
+            r['limit'] = int(_limit)
+            r['next'] = int(r['start']) + int(_limit)
+            return r
+        return inner
+    return outer
 
 def rest_api(f):
     """Decorator to allow routes to return json"""
