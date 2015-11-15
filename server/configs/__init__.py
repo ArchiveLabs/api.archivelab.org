@@ -36,4 +36,11 @@ PORT = int(config.getdef("server", "port", 8080))
 DEBUG = bool(int(config.getdef("server", "debug", 1)))
 options = {'debug': DEBUG, 'host': HOST, 'port': PORT}
 
-API_BASEURL = config.getdef("api", "baseurl", "https://archive.org")
+API_BASEURL = config.getdef("api", "url", "http://archive.org")
+ES_URL = config.getdef("api", "es", "")
+
+# Enable CORS to allow cross-domain loading of tilesets from this server
+# Especially useful for SeaDragon viewers running locally
+cors = bool(int(config.getdef('server', 'cors', 0)))
+
+iiif_url = config.getdef('iiif', 'url', 'http://iiif.archivelab.org')

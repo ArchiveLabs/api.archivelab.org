@@ -12,12 +12,14 @@
 
 from flask import Flask
 from flask.ext.routing import router
+from flask.ext.cors import CORS
 from views import apis
 from views.apis.v1 import items
-from configs import options
+from configs import options, cors
 
 urls = ('', apis)
 app = router(Flask(__name__), urls)
+cors = CORS(app) if cors else None
 
 if __name__ == "__main__":
     app.run(**options)

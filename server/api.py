@@ -13,7 +13,7 @@
 import json
 import requests
 import mimetypes
-from configs import API_BASEURL
+from configs import API_BASEURL, ES_URL
 
 class MaxLimitException(Exception):
     pass
@@ -27,14 +27,14 @@ def mimetype(f):
     return mimetypes.guess_type(f)[0]
 
 
-def items(iid=None, page=1, limit=100):
+def items(iid=None, page=1, limit=100, filters=""):
     # aaron's idea: Weekly dump of ID of all identifiers (gzip)
     # elastic search query w/ paging
     if iid:
         return item(iid)
     # 'all:1' also works
-    return search("NOT identifier:..*", page=page, limit=limit)
-    #items['docs'] = [i['identifier'] for i in items['docs']]
+    q = "NOT identifier:..*" + (" AND (%s)" % filters if filters else "")
+    return search(q, page=page, limit=limit)
 
 
 def item(iid):
@@ -74,10 +74,30 @@ def collections(collection_id=None, page=1, limit=100):
 def search(query, page=1, limit=100):
     if int(limit) > 1000:
         raise MaxLimitException("Limit may not exceed 1000.")
+
+    # return requests.get(ES_URL, data=json.dumps({
+    #     "_source": False,
+    #     "sort": [
+    #         {
+    #             "identifier": {
+    #                 "order": "asc"
+    #             }
+    #         }
+    #     ],
+    #     "from": page * limit,
+    #     "size": limit,
+    #     "query": {
+    #         "query_string": {
+    #             "query": query
+    #         }
+    #     }
+    # })).json()
+
     return requests.get('%s/advancedsearch.php' % API_BASEURL,
                         params={'q': query,
+                                'sort': 'date asc, identifier asc',
                                 'rows': limit,
                                 'page': page,
-                                'fl[]': 'identifier',
-                                'output': 'json'
+                                'fl[]': 'identifier,title',
+                                'output': 'json',
                                 }).json()

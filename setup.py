@@ -53,5 +53,6 @@ setup(
     install_requires=[
         'flask',
         'Flask-Routing',
+        'requests'
         ]
 )

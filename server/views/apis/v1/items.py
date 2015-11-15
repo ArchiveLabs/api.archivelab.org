@@ -19,8 +19,13 @@ class Items(MethodView):
     @rest_api
     @paginate()
     def get(self, page=1, limit=100):
-        return items(page=page, limit=limit)
+        filters = request.args.get('filters', '')
+        return items(page=page, limit=limit, filters=filters)
 
+    @rest_api
+    def post(self):
+        """For Upload API"""
+        return item(iid)
 
 class Item(MethodView):
     @rest_api

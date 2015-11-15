@@ -32,6 +32,7 @@ def paginate(page=1, limit=100):
             _limit = request.args.get('limit', limit)
             r = f(*args, page=_page, limit=_limit, **kwargs)['response']
             r['limit'] = int(_limit)
+            r['page'] = int(_page)
             r['next'] = int(r['start']) + int(_limit)        
             r['ids'] = [d['identifier'] for d in r.pop('docs')]
             return r
