@@ -15,12 +15,12 @@ from flask import Response, request
 from flask.views import MethodView
 
 
-iiif_url = 'https://api.groovebox.org'
+music_url = 'https://api.groovebox.org'
 
 
 class Music(MethodView):
     def get(self, uri=""):
-        url = '%s/%s' % (iiif_url, uri) if uri else iiif_url
+        url = '%s/%s' % (music_url, uri) if uri else music_url
         r = requests.get(url, stream=True)
         return Response(r.content, mimetype=r.headers['content-type'])
 

@@ -39,8 +39,7 @@ def items(iid=None, page=1, limit=100, filters=""):
 
 def item(iid):
     try:
-        return requests.get('%s/details/%s' % (API_BASEURL, iid),
-                            params={"output": "json"}).json()
+        return requests.get('%s/metadata/%s' % (API_BASEURL, iid)).json()
     except ValueError as v:
         return v
 
@@ -93,9 +92,8 @@ def search(query, page=1, limit=100):
     #     }
     # })).json()
 
-    return requests.get('%s/advancedsearch.php' % API_BASEURL,
+    return requests.get('%s/advancedsearch.php?' % API_BASEURL + 'sort%5B%5D=date+asc&sort%5B%5D=updatedate',
                         params={'q': query,
-                                'sort': 'date asc, identifier asc',
                                 'rows': limit,
                                 'page': page,
                                 'fl[]': 'identifier,title',

@@ -30,11 +30,14 @@ def paginate(page=1, limit=100):
         def inner(*args, **kwargs):
             _page = request.args.get('page', page)
             _limit = request.args.get('limit', limit)
-            r = f(*args, page=_page, limit=_limit, **kwargs)['response']
+            try:
+                r = f(*args, page=_page, limit=_limit, **kwargs)['response']                
+                r['ids'] = [d['identifier'] for d in r.pop('docs')]
+                r['next'] = int(r['start']) + int(_limit)
+            except Exception as e:
+                r = {'error': str(e), 'ids': []}
             r['limit'] = int(_limit)
             r['page'] = int(_page)
-            r['next'] = int(r['start']) + int(_limit)        
-            r['ids'] = [d['identifier'] for d in r.pop('docs')]
             return r
         return inner
     return outer
