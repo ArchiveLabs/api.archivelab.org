@@ -51,18 +51,9 @@ class Files(MethodView):
         return item(iid)['files']
 
 
-class File(MethodView):
-    def get(self, iid, filename):
-        """Download the specified file
-        """
-        return Response(download(iid, filename),
-                        mimetype=mimetype(filename))
-
-
 urls = (
     '/<iid>/metadata', Metadata,
     '/<iid>/reviews', Reviews,
-    '/<iid>/files/<filename>', File,
     '/<iid>/files', Files,
     '/<iid>', Item,
     '', Items
