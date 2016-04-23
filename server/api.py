@@ -15,6 +15,7 @@ import requests
 import mimetypes
 from configs import API_BASEURL, ES_URL
 
+
 class MaxLimitException(Exception):
     pass
 
@@ -46,7 +47,7 @@ def item(iid):
 
 def download(iid, filename):
     r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
-                     stream=True, allow_redirects=True)
+                     stream=True, allow_redirects=True, verify=False)
     if not r.ok:
         return None # raise exception
 
@@ -70,29 +71,16 @@ def collections(collection_id=None, page=1, limit=100):
     return search(q, page=page, limit=limit)
 
 
+def apiv1():
+    r = requests.post('%s/advancedsearch.php?' % API_BASEURL)
+    return r.json()
+
+
 def search(query, page=1, limit=100):
     if int(limit) > 1000:
         raise MaxLimitException("Limit may not exceed 1000.")
 
-    # return requests.get(ES_URL, data=json.dumps({
-    #     "_source": False,
-    #     "sort": [
-    #         {
-    #             "identifier": {
-    #                 "order": "asc"
-    #             }
-    #         }
-    #     ],
-    #     "from": page * limit,
-    #     "size": limit,
-    #     "query": {
-    #         "query_string": {
-    #             "query": query
-    #         }
-    #     }
-    # })).json()
-
-    return requests.get('%s/advancedsearch.php?' % API_BASEURL + 'sort%5B%5D=date+asc&sort%5B%5D=updatedate',
+    return requests.get('%s/advancedsearch.php?' % API_BASEURL + 'sort%5B%5D=date+asc&sort%5B%5D=createdate',
                         params={'q': query,
                                 'rows': limit,
                                 'page': page,

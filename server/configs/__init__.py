@@ -43,4 +43,5 @@ ES_URL = config.getdef("api", "es", "")
 # Especially useful for SeaDragon viewers running locally
 cors = bool(int(config.getdef('server', 'cors', 0)))
 
-iiif_url = config.getdef('iiif', 'url', 'http://iiif.archivelab.org')
+iiif_url = config.getdef('iiif', 'url', 'https://iiif.archivelab.org')
+pragma_url = config.getdef('pragma', 'url', 'https://pragma.archivelab.org')

@@ -16,7 +16,7 @@ from flask.views import MethodView
 from views import rest_api, paginate
 from api import items
 
-metapub_url = 'http://api.archivelab.org:8080'
+metapub_url = 'https://scholar.archivelab.org'
 
 
 class Journals(MethodView):
