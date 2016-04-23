@@ -54,8 +54,10 @@ class Files(MethodView):
 class File(MethodView):
     def get(self, iid, filename):
         """Download the specified file"""
-        return Response(download(iid, filename, headers=request.headers),
-                        mimetype=mimetype(filename))
+        headers = dict(request.headers)
+        del headers['Content-Length']
+        f = download(iid, filename, headers=headers)
+        return Response(f, mimetype=mimetype(filename))
 
 
 urls = (
