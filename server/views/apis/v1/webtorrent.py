@@ -25,6 +25,8 @@ class Torrent(MethodView):
         fs = ''.join(list(download(iid, iid + '_archive.torrent')))
         t = bencode.bdecode(fs)
         t['url-list'] = ['https://api.archive.org/v2/webtorrents/files/']
+        t['announce'] = 'wss://tracker.webtorrent.io'
+        t['announce-list'] = [['wss://tracker.webtorrent.io'], ['wss://tracker.btorrent.xyz'], ['wss://tracker.fastcast.nz'], ['wss://tracker.openwebtorrent.com']]
         return Response(
             bencode.bencode(t),
             mimetype=mimetype(iid + '_archive.torrent')
