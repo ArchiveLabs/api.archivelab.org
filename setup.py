@@ -53,6 +53,7 @@ setup(
     install_requires=[
         'flask',
         'Flask-Routing',
-        'requests'
+        'requests',
+        'BitTorrent-bencode'
         ]
 )
