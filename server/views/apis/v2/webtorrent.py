@@ -24,9 +24,10 @@ class Torrent(MethodView):
         """
         fs = download(iid, iid + '_archive.torrent').content
         t = better_bencode.loads(fs)
-        t['url-list'] = ['https://api.archivelab.org/v2/webtorrents/files/']
-        t['announce'] = 'wss://tracker.webtorrent.io'
-        t['announce-list'] = [['wss://tracker.webtorrent.io'], ['wss://tracker.btorrent.xyz'], ['wss://tracker.fastcast.nz'], ['wss://tracker.openwebtorrent.com']]
+        print(t)
+        t[b'url-list'] = [b'https://api.archivelab.org/v2/webtorrents/files/']
+        t[b'announce'] = b'wss://tracker.webtorrent.io'
+        t[b'announce-list'] = [[b'wss://tracker.webtorrent.io'], [b'wss://tracker.btorrent.xyz'], [b'wss://tracker.fastcast.nz'], [b'wss://tracker.openwebtorrent.com']]
         return Response(
             better_bencode.dumps(t),
             mimetype=mimetype(iid + '_archive.torrent')
