@@ -46,14 +46,16 @@ def item(iid):
 
 
 def download(iid, filename, headers=None):
-
-    url = '%s/download/%s/%s' % (API_BASEURL, iid, filename)
-    r = requests.get(url, stream=True, allow_redirects=True,
-                     verify=False, headers=headers)
+    h = dict(headers) if headers else {}
+    h['Accept-Encoding'] = ''
+    del h['Content-Length']
+    r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
+                     stream=True, allow_redirects=True, verify=False,
+                     headers=h)
     if not r.ok:
-        return None # raise exception
+        return None  # raise exception
 
-    return r.iter_content(chunk_size=1024)
+    return r
 
 
 def snapshot(url, timestamp=None):

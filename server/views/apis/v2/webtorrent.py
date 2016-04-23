@@ -22,7 +22,7 @@ class Torrent(MethodView):
     def get(self, iid):
         """ Return a torrent with the webseed set correctly for webtorrents
         """
-        fs = ''.join(list(download(iid, iid + '_archive.torrent')))
+        fs = download(iid, iid + '_archive.torrent').content
         t = better_bencode.loads(fs)
         t['url-list'] = ['https://api.archivelab.org/v2/webtorrents/files/']
         t['announce'] = 'wss://tracker.webtorrent.io'
