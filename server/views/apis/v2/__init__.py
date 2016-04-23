@@ -14,7 +14,7 @@ from flask import request
 from flask.views import MethodView
 from views import rest_api
 from views.apis.v2 import items, collections, search, wayback, iiif, pragma, \
-    music, books, analytics, television, scholar
+    music, books, analytics, television, scholar, webtorrent
 
 
 class Endpoints(MethodView):
@@ -38,5 +38,6 @@ urls = (
     '/books', books,
     '/analytics', analytics,
     #'/television', television,
+    '/webtorrent', webtorrent,
     '/', Endpoints
 )
