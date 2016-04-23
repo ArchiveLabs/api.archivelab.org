@@ -48,7 +48,8 @@ def item(iid):
 def download(iid, filename, headers=None):
     h = dict(headers) if headers else {}
     h['Accept-Encoding'] = ''
-    del h['Content-Length']
+    if 'Content-Length' in h:
+        del h['Content-Length']
     r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
                      stream=True, allow_redirects=True, verify=False,
                      headers=h)
