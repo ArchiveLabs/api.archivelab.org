@@ -11,7 +11,7 @@
     :license: see LICENSE for more details.
 """
 
-import bencode
+import better_bencode
 from flask import Response
 from flask.views import MethodView
 from api import mimetype, download
@@ -23,12 +23,12 @@ class Torrent(MethodView):
         """ Return a torrent with the webseed set correctly for webtorrents
         """
         fs = ''.join(list(download(iid, iid + '_archive.torrent')))
-        t = bencode.bdecode(fs)
+        t = better_bencode.loads(fs)
         t['url-list'] = ['https://api.archive.org/v2/webtorrents/files/']
         t['announce'] = 'wss://tracker.webtorrent.io'
         t['announce-list'] = [['wss://tracker.webtorrent.io'], ['wss://tracker.btorrent.xyz'], ['wss://tracker.fastcast.nz'], ['wss://tracker.openwebtorrent.com']]
         return Response(
-            bencode.bencode(t),
+            better_bencode.dumps(t),
             mimetype=mimetype(iid + '_archive.torrent')
         )
 

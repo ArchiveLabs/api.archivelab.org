@@ -55,6 +55,6 @@ setup(
         'Flask-Routing',
         'Flask-Cors',
         'requests',
-        'BitTorrent-bencode'
+        'better-bencode'
         ]
 )
