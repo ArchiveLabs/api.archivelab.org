@@ -45,9 +45,10 @@ def item(iid):
         return v
 
 
-def download(iid, filename):
+def download(iid, filename, headers=None):
     r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
-                     stream=True, allow_redirects=True, verify=False)
+                     stream=True, allow_redirects=True, verify=False,
+                     headers=headers)
     if not r.ok:
         return None # raise exception
 
