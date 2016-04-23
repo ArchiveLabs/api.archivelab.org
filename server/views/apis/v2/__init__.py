@@ -38,6 +38,6 @@ urls = (
     '/books', books,
     '/analytics', analytics,
     #'/television', television,
-    '/webtorrent', webtorrent,
+    '/webtorrents', webtorrent,
     '/', Endpoints
 )
