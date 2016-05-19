@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #-*-coding: utf-8 -*-
 
 """
@@ -13,7 +12,8 @@
 from flask import request
 from flask.views import MethodView
 from views import rest_api
-from views.apis.v2 import items, collections, search, wayback, iiif, pragma, \
+from views.apis.v1 import availability, wayback
+from views.apis.v2 import items, collections, search, iiif, pragma, \
     music, books, analytics, television, scholar, webtorrent
 
 
@@ -30,7 +30,7 @@ urls = (
     '/items', items,
     '/search', search.Search,
     '/collections', collections,
-    '/snapshots', wayback,
+    '/wayback', wayback,
     '/music', music,
     '/iiif', iiif,
     '/pragma', pragma,
@@ -39,5 +39,6 @@ urls = (
     '/analytics', analytics,
     #'/television', television,
     '/webtorrents', webtorrent,
+    '/availability', availability,
     '/', Endpoints
 )

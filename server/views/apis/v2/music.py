@@ -21,7 +21,7 @@ music_url = 'https://api.groovebox.org'
 class Music(MethodView):
     def get(self, uri=""):
         url = '%s/%s' % (music_url, uri) if uri else music_url
-        r = requests.get(url, stream=True)
+        r = requests.get(url, stream=True, verify=False)
         return Response(r.content, mimetype=r.headers['content-type'])
 
 

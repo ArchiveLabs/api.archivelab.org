@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #-*-coding: utf-8 -*-
 
 """
@@ -15,7 +14,9 @@ from views import rest_api
 from flask import Response, request
 from flask.views import MethodView
 from flask import request
+from . import availability
 from configs import API_BASEURL
+
 
 class Endpoints(MethodView):
     @rest_api
@@ -35,6 +36,7 @@ class Items(MethodView):
 
 
 urls = (
+    '/availability', availability,
     '/items', Items,
     '/', Endpoints,
     '', Endpoints

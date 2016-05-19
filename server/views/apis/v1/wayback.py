@@ -46,7 +46,14 @@ class Snapshots(MethodView):
 class Sources(MethodView):
     @rest_api
     def get(self):
-        return {}
+        return {
+            "captures": "null",
+            "hosts": "null",
+            "docs": [
+                "http://wwwb-front1.us.archive.org:8085/usage",
+                "https://archive.org/help/wayback_api.php"
+            ]
+        }
 
 urls = (
     '/stats', Stats,

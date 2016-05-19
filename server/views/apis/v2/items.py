@@ -54,7 +54,7 @@ class Files(MethodView):
 class File(MethodView):
     def get(self, iid, filename):
         """Download the specified file"""
-        r=download(iid, filename, headers=request.headers)
+        r = download(iid, filename, headers=request.headers)
         return Response(r.iter_content(chunk_size=1024),
                         headers=dict(r.headers),
                         status=r.status_code,

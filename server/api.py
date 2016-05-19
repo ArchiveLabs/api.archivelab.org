@@ -50,12 +50,11 @@ def download(iid, filename, headers=None):
     h['Accept-Encoding'] = ''
     if 'Content-Length' in h:
         del h['Content-Length']
-    r = requests.get('%s/download/%s/%s' % (API_BASEURL, iid, filename),
-                     stream=True, allow_redirects=True, verify=False,
-                     headers=h)
+    url = '%s/download/%s/%s' % (API_BASEURL, iid, filename)
+    r = requests.get(url, stream=True, allow_redirects=True,
+                     verify=False, headers=h)
     if not r.ok:
         return None  # raise exception
-
     return r
 
 
