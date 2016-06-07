@@ -55,6 +55,7 @@ setup(
         'Flask-Routing',
         'Flask-Cors',
         'requests',
-        'better-bencode'
+        'better-bencode',
+        'bs4'
         ]
 )

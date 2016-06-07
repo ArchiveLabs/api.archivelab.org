@@ -50,10 +50,15 @@ def download(iid, filename, headers=None):
     h['Accept-Encoding'] = ''
     if 'Content-Length' in h:
         del h['Content-Length']
+    if '.____padding_file/' in filename and 'Host' in h:
+        del h['Host']
     url = '%s/download/%s/%s' % (API_BASEURL, iid, filename)
+
     r = requests.get(url, stream=True, allow_redirects=True,
                      verify=False, headers=h)
     if not r.ok:
+        # print('curl -v -L -i -H ',
+        # ' -H '.join("'%s: %s'" % i for i in r.request.headers.items()), r.request.url)
         return None  # raise exception
     return r
 
