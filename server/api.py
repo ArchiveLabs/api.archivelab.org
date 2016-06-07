@@ -72,12 +72,12 @@ def snapshot(url, timestamp=None):
                         % (API_BASEURL, url)).json()
 
 
-def collections(collection_id=None, page=1, limit=100):
+def collections(collection_id=None, page=1, limit=100, security=True):
     if collection_id:
-        q = "collection:(wb_urls)"
+        q = "collection:(%s)" % collection_id
     else:
         q = "mediatype:collection AND NOT identifier:fav-*"
-    return search(q, page=page, limit=limit)
+    return search(q, page=page, limit=limit, security=security)
 
 
 def apiv1():
@@ -85,8 +85,8 @@ def apiv1():
     return r.json()
 
 
-def search(query, page=1, limit=100):
-    if int(limit) > 1000:
+def search(query, page=1, limit=100, security=True):
+    if int(limit) > 1000 and security:
         raise MaxLimitException("Limit may not exceed 1000.")
 
     return requests.get('%s/advancedsearch.php?' % API_BASEURL + 'sort%5B%5D=date+asc&sort%5B%5D=createdate',
