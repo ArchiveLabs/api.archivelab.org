@@ -64,7 +64,7 @@ class File(MethodView):
 urls = (
     '/<iid>/metadata', Metadata,
     '/<iid>/reviews', Reviews,
-    '/<iid>/files/<filename>', File,
+    '/<iid>/files/<path:filename>', File,
     '/<iid>/files', Files,
     '/<iid>', Item,
     '', Items
