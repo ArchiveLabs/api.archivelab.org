@@ -29,7 +29,7 @@ class Endpoints(MethodView):
 class BooksAvailability(MethodView):
     @rest_api
     def get(self, uri=""):
-        url = 'https://archive.org/services/book/v1/do_we_want_it'
+        url = 'http://want.archive.org/api'
         if uri:
             url = os.path.join(url, uri)
         if request.query_string:

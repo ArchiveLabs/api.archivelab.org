@@ -12,8 +12,16 @@
 
 import json
 import requests
+import base64
 import mimetypes
+import internetarchive as ia
+from bs4 import BeautifulSoup
 from configs import API_BASEURL, ES_URL
+
+
+BOOK_DATA_URL = '%s/BookReader/BookReaderJSON.php'
+REVERSE_IMAGE_SEARCH_URL = "http://rootabout.com/search.php"
+ADVANCED_SEARCH = '%s/advancedsearch.php?' % API_BASEURL
 
 
 class MaxLimitException(Exception):
@@ -88,11 +96,26 @@ def apiv1():
 def search(query, page=1, limit=100, security=True):
     if int(limit) > 1000 and security:
         raise MaxLimitException("Limit may not exceed 1000.")
-
-    return requests.get('%s/advancedsearch.php?' % API_BASEURL + 'sort%5B%5D=date+asc&sort%5B%5D=createdate',
+    return requests.get(
+        ADVANCED_SEARCH + 'sort%5B%5D=date+asc&sort%5B%5D=createdate',
                         params={'q': query,
                                 'rows': limit,
                                 'page': page,
                                 'fl[]': 'identifier,title',
                                 'output': 'json',
                                 }).json()
+
+
+def reverse_image_search(filename, base64img):
+    mime = "data:%s;base64," % mimetype(filename)
+    r = requests.post(REVERSE_IMAGE_SEARCH_URL, data={
+        "searchimg": "%s,%s" % (mime, base64img),
+        "limit": "5",
+        "search": "ia"
+    })
+    html = r.content
+    soup = BeautifulSoup(html, 'html.parser')
+    table = soup.findAll('table', {'class': 'metatable'})[0]
+    return [x.nextSibling.text for x in
+            table.findAll('td', text="Identifier:")]
+    
