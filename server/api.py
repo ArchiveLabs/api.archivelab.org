@@ -18,10 +18,10 @@ import internetarchive as ia
 from bs4 import BeautifulSoup
 from configs import API_BASEURL, ES_URL
 
-
-BOOK_DATA_URL = '%s/BookReader/BookReaderJSON.php'
+BOOK_DATA_URL = 'http://%s/BookReader/BookReaderJSON.php'
 REVERSE_IMAGE_SEARCH_URL = "http://rootabout.com/search.php"
 ADVANCED_SEARCH = '%s/advancedsearch.php?' % API_BASEURL
+FULLTEXT_SEARCH_API = "https://books-search0.us.archive.org/api/dev/v0.1/search"
 
 
 class MaxLimitException(Exception):
@@ -34,6 +34,18 @@ class InvalidJSONException(Exception):
 
 def mimetype(f):
     return mimetypes.guess_type(f)[0]
+
+
+def get_book_data(identifier):
+    metadata = requests.get('%s/metadata/%s' % (API_BASEURL, identifier)).json()
+    server = metadata['server']
+
+    r = requests.get(BOOK_DATA_URL % server, params={
+            'server': server,
+            'itemPath': metadata['dir'],
+            'itemId': identifier
+    })
+    return r.json()
 
 
 def items(iid=None, page=1, limit=100, filters=""):
@@ -69,6 +81,33 @@ def download(iid, filename, headers=None):
         # ' -H '.join("'%s: %s'" % i for i in r.request.headers.items()), r.request.url)
         return None  # raise exception
     return r
+
+
+def fulltext_search(text, collection=None, ids=False, names=False, hits=False):
+    url = FULLTEXT_SEARCH_API + '?text="%s"' % text
+    if collection:
+        url += '&collection=%s' % collection
+    r = requests.get(url)
+    js = r.json()
+    results = js['hits']['hits']
+
+    if ids and names and hits:
+        return dict((r['fields']['identifier'][0], {
+            'name': r['fields']['title'][0],
+            'hits': r['highlight']['text']
+        }) for r in results)
+
+    elif ids and names:
+        return dict((r['fields']['identifier'][0],
+                     r['fields']['title'][0]) for r in results)
+
+    elif names:
+        return [r['fields']['title'][0] for r in results]
+
+    elif ids:
+        return [r['fields']['identifier'][0] for r in results]
+
+    return r.json()
 
 
 def snapshot(url, timestamp=None):
@@ -118,4 +157,3 @@ def reverse_image_search(filename, base64img):
     table = soup.findAll('table', {'class': 'metatable'})[0]
     return [x.nextSibling.text for x in
             table.findAll('td', text="Identifier:")]
-    

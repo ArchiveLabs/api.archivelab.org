@@ -10,6 +10,7 @@
     :license: see LICENSE for more details.
 """
 
+import internetarchive as ia
 from flask import render_template, Response, request
 from flask.views import MethodView
 from views import rest_api, paginate
@@ -25,7 +26,10 @@ class Items(MethodView):
     @rest_api
     def post(self):
         """For Upload API"""
+        # f = request.files['file']
+        # ia.upload(name, f)
         return item(iid)
+
 
 class Item(MethodView):
     @rest_api

@@ -14,7 +14,7 @@ from flask import Response, request, jsonify
 from flask.views import MethodView
 from views import rest_api, paginate
 from api import item, items, mimetype, download, \
-    API_BASEURL, BOOK_DATA_URL
+    get_book_data
 
 
 class Books(MethodView):
@@ -28,20 +28,10 @@ class Books(MethodView):
 class Book(MethodView):
     def get(self, identifier):
         """Returns book metadata"""
-        metadata = requests.get(
-            '%s/metadata/%s' % (API_BASEURL, identifier)).json()
-        subPrefix = metadata['dir']
-        server = metadata.get('server', API_BASEURL)
-        r = requests.get(BOOK_DATA_URL % server, params={
-            'server': server,
-            'itemPath': subPrefix,
-            'itemId': identifier
-        })
-        data = r.json()
-        return jsonify(data)
+        return jsonify(get_book_data(identifier))
 
 
 urls = (
-    '/<iid>', Book,
+    '/<identifier>', Book,
     '', Books
     )

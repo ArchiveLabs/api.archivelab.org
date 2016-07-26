@@ -29,7 +29,7 @@ class Endpoints(MethodView):
 
 urls = (
     '/items', items,
-    '/search', search.Search,
+    '/search', search,
     '/collections', collections,
     '/wayback', wayback,
     '/music', music,
@@ -39,7 +39,7 @@ urls = (
     '/scholar', scholar,
     '/books', books,
     '/analytics', analytics,
-    #'/television', television,
+    '/television', television,
     '/webtorrents', webtorrent,
     '/availability', availability,
     '/', Endpoints
