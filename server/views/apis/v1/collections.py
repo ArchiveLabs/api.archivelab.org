@@ -13,7 +13,7 @@
 from flask import request, redirect
 from flask.views import MethodView
 from views import rest_api, paginate
-from api import collections
+from api.archive import collections
 
 class Collections(MethodView):
 

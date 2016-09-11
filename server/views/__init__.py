@@ -14,16 +14,32 @@
 import sys
 import json
 from werkzeug import wrappers
-from flask import render_template, Response, request
+import calendar
+from datetime import datetime
+from flask import Response, request, jsonify
 from flask.views import MethodView
+from flask.json import JSONEncoder
+from api.core import ApiException, HTTPException
+from api import db
 
-class Base(MethodView):
-    def get(self, uri=None):
-        return render_template('base.html')
+class CustomJSONEncoder(JSONEncoder):
 
-class Partial(MethodView):
-    def get(self, partial):
-        return render_template('partials/%s.html' % partial)
+    def default(self, obj):
+        try:
+            if isinstance(obj, datetime):
+                if obj.utcoffset() is not None:
+                    obj = obj - obj.utcoffset()
+                    millis = int(
+                        calendar.timegm(obj.timetuple()) * 1000 +
+                        obj.microsecond / 1000
+                    )
+                    return millis
+            iterable = iter(obj)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        return JSONEncoder.default(self, obj)
 
 def paginate(page=1, limit=100):
     def outer(f):
@@ -46,20 +62,19 @@ def rest_api(f):
     """Decorator to allow routes to return json"""
     def inner(*args, **kwargs):
         try:
-            try:
-                res = f(*args, **kwargs)
-                if isinstance(res, wrappers.Response):
-                    return res
-                response = Response(json.dumps(res))
-            except Exception as e:
-                response = Response(json.dumps({
-                            "error": "%s: %s"
-                            % (e.__class__.__name__, str(e))
-                            }))
-
-            response.headers.add('Content-Type', 'application/json')
-            return response
+            return jsonify(f(*args, **kwargs))
+        except Exception as e:
+            return jsonify({"error": str(e)})
         finally:
-            #DB Rollbacks to protect against inconsistent states
-            pass
+            db.rollback()
+            db.remove()
     return inner
+
+def search(model, limit=50, lazy=True):
+    query = request.args.get('query')
+    field = request.args.get('field')
+    limit = min(request.args.get('limit', limit), limit)
+    if all([query, field, limit]):
+        return model.search(query, field=field, limit=limit, lazy=lazy)
+    raise ValueError('Query and field must be provided. Valid fields are: %s' \
+                         %  model.__table__.columns.keys())

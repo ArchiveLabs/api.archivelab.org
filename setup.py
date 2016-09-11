@@ -56,6 +56,8 @@ setup(
         'Flask-Cors',
         'requests',
         'better-bencode',
-        'bs4'
+        'bs4',
+        'xmljson',
+        'html'
         ]
 )

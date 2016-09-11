@@ -14,7 +14,7 @@ import base64
 from flask import Response, request, jsonify
 from flask.views import MethodView
 from views import rest_api, paginate
-from api import mimetype, download, reverse_image_search, \
+from api.archive import mimetype, download, reverse_image_search, \
     API_BASEURL, BOOK_DATA_URL
 
 class ImageSearch(MethodView):

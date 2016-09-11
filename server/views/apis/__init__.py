@@ -11,10 +11,10 @@
 """
 
 
-from views.apis import v2
+from views.apis import v1
 
 
 urls = (
-    '', v2
+    '', v1
     )
 

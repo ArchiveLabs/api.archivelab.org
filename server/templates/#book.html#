@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <!-- __ _ _ _ __| |_ (_)__ _____ 
+       / _` | '_/ _| ' \| |\ V / -_)
+       \__,_|_| \__|_||_|_| \_/\___| -->
+
+  <head>
+    <title>archive.org | The Internet Archive: Universal Access to All Knowledge</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+    <link href='https://fonts.googleapis.com/css?family=Raleway:400,800' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+        <iframe src="https://iiif.archivelab.org/iiif/{{book.archive_id}}" width="100%"
+		style="position: fixed; height: 100%; bottom: 0px; top: 0px; right: 0px;"></iframe>
+
+    <form action="/books/b" method="POST" class="create_form" id="book_form"
+	  style="position: fixed; top: 2px; background-color: black; height: 10px; padding-top: 5px;">
+      <input type="text" name="name" value="{{book.name}}" placeholder="Archive.org ID"/>
+      <input type="text" name="archive_id" value="{{book.archive_id}}" placeholder="Archive.org ID"/>
+      <input type="text" name="aids" value="{{aids}}" placeholder="Author IDs (csv)"/>
+      <input type="text" name="description" value="{{book.data.description}}" placeholder="Description"/>
+      <input type="submit" value="Update"/>
+    </form>    
+
+  </body>
+</html>
+

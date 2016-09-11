@@ -14,7 +14,7 @@ import internetarchive as ia
 from flask import render_template, Response, request
 from flask.views import MethodView
 from views import rest_api, paginate
-from api import item, items, mimetype, download
+from api.archive import item, items, mimetype, download
 
 class Items(MethodView):
     @rest_api

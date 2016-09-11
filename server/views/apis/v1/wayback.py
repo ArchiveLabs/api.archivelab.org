@@ -12,9 +12,9 @@
 
 from flask import request
 from flask.views import MethodView
-from api import snapshot
+from api.archive import wayback_snapshot, wayback_search
 from views import rest_api
-from bs4 import BeautifulSoup
+
 
 class Wayback(MethodView):
     @rest_api
@@ -30,6 +30,7 @@ class Stats(MethodView):
         url = "https://archive.org/metamgr.php?&w_mediatype=web" \
               "&w_collection=" + c + "&w_publicdate=%3E" + d1 + \
                                "%20AND%20%3C" + d2 + "&mode=more"
+        return {'url': url}
         #r = requests.get(url)
         #soup = BeautifulSoup(r.content)
         #res = soup.findAll('div', {'class': 'infoBarDiv'})
@@ -41,22 +42,27 @@ class Snapshots(MethodView):
     def get(self, url):
         i = request.args
         ts = i.get('timestamp', None)
-        return snapshot(url, timestamp=ts)
+        return wayback_snapshot(url, timestamp=ts)
+
+
+class Search(MethodView):
+    @rest_api
+    def get(self):
+        i = request.args
+        q = i.get('q', '')
+        return wayback_search(q)
+
+
 
 class Sources(MethodView):
     @rest_api
     def get(self):
-        return {
-            "captures": "null",
-            "hosts": "null",
-            "docs": [
-                "http://wwwb-front1.us.archive.org:8085/usage",
-                "https://archive.org/help/wayback_api.php"
-            ]
-        }
+        return {}
+
 
 urls = (
     '/stats', Stats,
+    '/search', Search,
     '/<path:url>', Snapshots,
     '', Wayback
 )

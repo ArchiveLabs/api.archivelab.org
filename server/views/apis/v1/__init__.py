@@ -3,7 +3,7 @@
 """
     __init__.py
     ~~~~~~~~~~~
-    URLs list for api.v1
+    URLs list for api v1
 
     :copyright: (c) 2015 by Internet Archive
     :license: see LICENSE for more details.
@@ -14,7 +14,9 @@ from views import rest_api
 from flask import Response, request
 from flask.views import MethodView
 from flask import request
-from . import availability
+from views.apis.v1 import items, collections, search, iiif, pragma, \
+    music, books, analytics, television, scholar, webtorrent, \
+    images, wayback, arcade, availability
 from configs import API_BASEURL
 
 
@@ -36,8 +38,20 @@ class Items(MethodView):
 
 
 urls = (
+    '/items', items,
+    '/search', search,
+    '/collections', collections,
+    '/wayback', wayback,
+    '/music', music,
+    '/images', images,
+    '/arcade', arcade,
+    '/iiif', iiif,
+    '/pragma', pragma,
+    '/scholar', scholar,
+    '/books', books,
+    '/analytics', analytics,
+    '/television', television,
+    '/webtorrents', webtorrent,
     '/availability', availability,
-    '/items', Items,
     '/', Endpoints,
-    '', Endpoints
 )

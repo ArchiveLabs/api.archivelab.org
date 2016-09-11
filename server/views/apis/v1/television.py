@@ -14,7 +14,7 @@ import requests
 from flask import Response, request, jsonify
 from flask.views import MethodView
 from views import rest_api, paginate
-from api import items, item, search, collections
+from api.archive import items, item, search, collections
 
 
 class Networks(MethodView):

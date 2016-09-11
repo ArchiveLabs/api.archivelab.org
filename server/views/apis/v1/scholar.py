@@ -2,9 +2,9 @@
 #-*-coding: utf-8 -*-
 
 """
-    iiif.py
-    ~~~~~~~~
-    Redirect requests for IIIF resources through iiif.archive.org
+    scholar.py
+    ~~~~~~~~~~
+    Redirects requests to scholar.archive.org service
 
     :copyright: (c) 2015 by Internet Archive
     :license: see LICENSE for more details.
@@ -14,18 +14,20 @@ import requests
 from flask import Response, request, jsonify
 from flask.views import MethodView
 from views import rest_api, paginate
-from api import items
-from configs import pragma_url
+from api.archive import items
+
+metapub_url = 'https://scholar.archivelab.org'
 
 
-class Pragma(MethodView):
+class Journals(MethodView):
+    @rest_api
     def get(self, uri=""):
-        url = '%s/%s' % (pragma_url, uri) if uri else pragma_url
-        r = requests.get(url, stream=True, allow_redirects=True, timeout=None)
+        url = '%s/%s' % (metapub_url, uri) if uri else metapub_url
+        r = requests.get(url, stream=True)
         return Response(r.content, mimetype=r.headers['content-type'])
 
 
 urls = (
-    '/<path:uri>', Pragma,
-    '', Pragma
+    '/<path:uri>', Journals,
+    '', Journals
 )

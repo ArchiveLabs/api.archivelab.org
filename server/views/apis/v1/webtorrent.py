@@ -14,7 +14,7 @@
 import better_bencode
 from flask import Response
 from flask.views import MethodView
-from api import mimetype, download
+from api.archive import mimetype, download
 from .items import File, Files
 
 
@@ -25,7 +25,7 @@ class Torrent(MethodView):
         fs = download(iid, iid + '_archive.torrent').content
         t = better_bencode.loads(fs)
         # print(t)
-        t[b'url-list'] = [b'https://api.archivelab.org/v2/webtorrents/files/']
+        t[b'url-list'] = [b'https://api.archivelab.org/webtorrents/files/']
         t[b'announce'] = b'wss://tracker.webtorrent.io'
         t[b'announce-list'] = [[b'wss://tracker.webtorrent.io'],
                                [b'wss://tracker.btorrent.xyz'],
