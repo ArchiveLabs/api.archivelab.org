@@ -25,7 +25,9 @@ class Search(MethodView):
         query = i.get('q', '')
         limit = i.get('limit', 50)
         page = i.get('page', 1)
-        return search(query, page=page, limit=limit)
+        sort = i.get('sort', None)
+        fields = i.get('fields', None)
+        return search(query, page=page, limit=limit, sort=sort, fields=fields)
 
 
 class FulltextSearch(MethodView):

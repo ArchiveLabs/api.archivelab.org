@@ -204,7 +204,7 @@ def get_arcade_games(query=None, page=1, limit=1000):
         'emulator:*' + ((' AND %s' % query) if query else '')
     return search(q, page=page, limit=limit, sort="sort%5B%5D=downloads+desc")
 
-def search(query, page=1, limit=100, security=True, sort=None):
+def search(query, page=1, limit=100, security=True, sort=None, fields=None):
     if not query:
         raise ValueError("GET query parameters 'q' required")
 
@@ -212,12 +212,13 @@ def search(query, page=1, limit=100, security=True, sort=None):
         raise MaxLimitException("Limit may not exceed 1000.")
 
     sort = sort or 'sort%5B%5D=date+asc&sort%5B%5D=createdate'
+    fields = fields or 'identifier,title'
     return requests.get(
         ADVANCED_SEARCH + sort,
         params={'q': query,
                 'rows': limit,
                 'page': page,
-                'fl[]': 'identifier,title',
+                'fl[]': fields,
                 'output': 'json',
             }).json()
 
