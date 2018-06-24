@@ -21,9 +21,17 @@ from configs import iiif_url
 class Catalog(MethodView):
     @rest_api
     @paginate()
-    def get(self, page=1, limit=100):
-        return items(page=page, limit=limit,
-                     filters="(mediatype:(texts) OR mediatype:(image))")
+    def get(self, page=1, limit=1000):
+        q = request.args.get('q', '')
+        query = "(mediatype:(texts) OR mediatype:(image))" + \
+                ((" AND %s" % q) if q else "")
+        fields = request.args.get('fields', '')
+        sorts = request.args.get('sorts', '')
+        cursor = request.args.get('cursor', '')
+        version = 'v2'
+        limit = 1000
+        return items(page=page, limit=limit, fields=fields, sorts=sorts,
+                     query=query, cursor=cursor, version=version)
 
 class IIIF(MethodView):
     def get(self, uri=""):

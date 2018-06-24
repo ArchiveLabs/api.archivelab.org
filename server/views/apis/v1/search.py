@@ -15,7 +15,8 @@ from flask.views import MethodView
 from views import rest_api
 from api import books as api
 from api.archive import search, fulltext_search, \
-    get_searchinside_data, get_wordsinside_data, search_wayback
+    get_searchinside_data, get_wordsinside_data, search_wayback, \
+    item, librivox
 
 
 class Search(MethodView):
@@ -28,6 +29,12 @@ class Search(MethodView):
         sort = i.get('sort', None)
         fields = i.get('fields', None)
         return search(query, page=page, limit=limit, sort=sort, fields=fields)
+
+
+class Librivox(MethodView):
+    @rest_api
+    def get(self, ocaid=None):
+        return {'url': librivox(ocaid)}
 
 
 class FulltextSearch(MethodView):
@@ -77,6 +84,7 @@ urls = (
     '/books/<bid>/regions', SearchInside,
     '/books/<bid>', SearchInside,
     '/books', FulltextSearch,
+    '/librivox/<ocaid>', Librivox,
     '/classics', FulltextSearchClassics,
     '/wayback', WaybackSearch,
     '', Search

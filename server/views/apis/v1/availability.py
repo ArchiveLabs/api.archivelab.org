@@ -50,11 +50,28 @@ class CDsAvailability(MethodView):
         return Response(r.content, mimetype="application/json")
 
 
+class Services(MethodView):
+    @rest_api
+    def get(self):
+        i = request.args
+        service = i.get('service', '')
+        response = {
+            "code": None,
+            "service": service
+        }
+        try:
+            r = requests.get(service)
+            response["code"] = r.status_code
+        except requests.exceptions.RequestException as e:
+            response["code"] = False
+        return response
+
 urls = (
     '/wayback/<path:url>', wayback.Snapshots,
     '/wayback', wayback.Sources,
     '/books/<path:uri>', BooksAvailability,
     '/books', BooksAvailability,
     '/cds', CDsAvailability,
+    '/services', Services,
     '', Endpoints
     )

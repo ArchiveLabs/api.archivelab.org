@@ -20,8 +20,14 @@ class Items(MethodView):
     @rest_api
     @paginate()
     def get(self, page=1, limit=100):
-        filters = request.args.get('filters', '')
-        return items(page=page, limit=limit, filters=filters)
+        query = request.args.get('filters', '')
+        query = request.args.get('q', '')
+        fields = request.args.get('fields', '')
+        sorts = request.args.get('sorts', '')
+        cursor = request.args.get('cursor', '')
+        version = request.args.get('v', '')
+        return items(page=page, limit=limit, fields=fields, sorts=sorts,
+                     query=query, cursor=cursor, version=version)
 
     @rest_api
     def post(self):

@@ -29,13 +29,10 @@ class Stats(MethodView):
         c = request.args.get('collection', '*;widecrawl*')
         url = "https://archive.org/metamgr.php?&w_mediatype=web" \
               "&w_collection=" + c + "&w_publicdate=%3E" + d1 + \
-                               "%20AND%20%3C" + d2 + "&mode=more"
-        return {'url': url}
-        #r = requests.get(url)
-        #soup = BeautifulSoup(r.content)
-        #res = soup.findAll('div', {'class': 'infoBarDiv'})
-        #return res[0]
-
+                               "%20AND%20%3C" + d2 + "&mode=more&output_format=json"
+        r = requests.get(url)
+        data = r.json()
+        return data
 
 class Snapshots(MethodView):
     @rest_api

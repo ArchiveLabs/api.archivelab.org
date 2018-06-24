@@ -11,8 +11,8 @@
 """
 
 from flask import Flask
-from flask.ext.routing import router
-from flask.ext.cors import CORS
+from flask_routing import router
+from flask_cors import CORS
 from views import apis
 from configs import options, cors
 

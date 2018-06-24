@@ -14,16 +14,26 @@ import json
 import requests
 import base64
 import mimetypes
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO, BytesIO
+
 import xmljson
 import internetarchive as ia
-from configs import API_BASEURL, ES_URL
+from configs import API_BASEURL, ES_URL, iiif_url
 
+SCRAPE_API = '%s/services/search/v1/scrape' % API_BASEURL
 BOOK_DATA_URL = 'http://%s/BookReader/BookReaderJSON.php'
+BOOK_PAGE_URL = 'http://%s/BookReader/BookReaderImages.php'
 REVERSE_IMAGE_SEARCH_URL = "http://rootabout.com/search.php"
 ADVANCED_SEARCH = '%s/advancedsearch.php?' % API_BASEURL
 FULLTEXT_SEARCH_API = "http://books-search0.us.archive.org/api/v0.1/search"
-BOOK_SEARCHINSIDE_URL = 'http://%s/fulltext/new_inside.php'
+BOOK_SEARCHINSIDE_URL = 'http://%s/fulltext/inside.php'
+#BOOK_OCR_URL = 'https://%s/BookReader/BookReaderGetTextWrapper.php'
+BOOK_OCR_URL = 'https://%s/~mek/getpage.php'
 
+OL_API = 'https://openlibrary.org/ia/%s.json'
 
 class MaxLimitException(Exception):
     pass
@@ -56,6 +66,40 @@ def get_book_data(identifier):
     })
     return r.json()
 
+
+def get_book_page(identifier, page, url_root):
+    """Retrieves a specific page from a book, assuing the book has no
+    special privileges
+    """
+    url = '%s/%s$%s/full/full/0/default.jpg' % (iiif_url, identifier, page)
+    r = requests.get(url, params={'domain': '%siiif/' % url_root}, stream=True,
+                     allow_redirects=True, timeout=None)
+    return r
+
+
+def get_toc_page(identifier, page):
+    """This should only be called by methods who can guarantee page is a
+    Table of Contents page. Bypasses lending restrictions
+    """
+    location = resolve_server(identifier)    
+    server = location['server']
+    path = location['dir']
+
+    url = BOOK_PAGE_URL % (server)
+    url += '?id=%s&itemPath=%s&server=%s&page=leaf%s' % (identifier, path, server, page)
+    print(url)
+    r = requests.get(url, stream=True)
+    strIO = StringIO()
+    strIO.write(r.content)
+    strIO.seek(0)
+    return strIO
+
+def get_book_iiif_manifest(identifier, url_root):
+    url = "%s/%s/manifest.json" % (iiif_url, identifier)
+    r = requests.get(url, params={'domain': '%siiif/' % url_root},
+                    allow_redirects=True)
+    return r.json()
+
 def get_wordsinside_data(bid, callback=''):
     local_path = "file://localhost//var/tmp/autoclean/derive/%s//%s.djvu" % (bid, bid)
     url = '%s/download/%s/%s' % (API_BASEURL, bid, '%s_djvu.xml' % bid)
@@ -68,11 +112,82 @@ def get_wordsinside_data(bid, callback=''):
     xml = fromstring(content)
     return xmljson.badgerfish.data(xml)
     #except:
-    #    return content        
+    #    return content
+
+def get_book_fulltext(identifier, stringio=False):
+    metadata = requests.get('%s/metadata/%s' % (API_BASEURL, identifier)).json()
+    location = {
+        'dir': metadata['dir'],
+        'server': metadata['server']
+    }
+    location = resolve_server(identifier)
+    server = location['server']
+    for f in metadata['files']:
+        if f['name'].endswith('_djvu.txt'):
+            url = 'https://archive.org/download/%s/%s' % (identifier, f['name'])
+            r = requests.get(url)
+            if stringio:
+                bio = BytesIO()
+                bio.write(r.content)
+                bio.seek(0)
+                return bio
+            return r.content
+
+def get_bookpage_annotations(identifier, page):
+    url = 'https://pragma.archivelab.org/annotations?canvas_id=' 
+    url = url + "%s/%s$%s/canvas" % (iiif_url, identifier, page)
+    r = requests.get(url)
+    return r.json()
+
+def get_book_annotations(identifier, crosslinks=None):
+    url = 'https://pragma.archivelab.org/annotations?ocaid=%s' % identifier
+    if crosslinks:
+        url += '&crosslinks=true'
+    r = requests.get(url)
+    return r.json()
+
+def get_scandata_xml(identifier):
+    from lxml.etree import fromstring, tostring
+    from xmljson import badgerfish as bf
+    location = resolve_server(identifier)    
+    server = location['server']
+    path = location['dir']
+    r = requests.get('%s/download/%s/%s_scandata.xml' % (
+        API_BASEURL, identifier, identifier))
+    xml = fromstring(r.content)
+    return xmljson.badgerfish.data(xml)
+
+def get_toc(identifier):
+    scandata = get_scandata_xml(identifier)
+    pages = scandata['book']['pageData']['page']
+    toc_pages = [pages[i]['@leafNum'] for i, page in enumerate(pages) if
+                 pages[i]['pageType']['$'] == 'Contents']
+    return toc_pages
+
+def get_bookpage_ocr(identifier, page, mode="paragraphs"):
+    metadata = requests.get('%s/metadata/%s' % (API_BASEURL, identifier)).json()
+    location = {
+        'dir': metadata['dir'],
+        'server': metadata['server']
+    }
+    location = resolve_server(identifier)
+    server = location['server']
+    for f in metadata['files']:
+        if f['name'].endswith('_djvu.xml'):
+            path = location['dir'] + '/' + f['name']
+            url = BOOK_OCR_URL % server
+            r = requests.get(url, params={
+                'path': path,
+                'page': page,
+                'callback': None,
+                'mode': mode
+            })
+            data = r.content.decode('utf-8')[14:-3]
+            return json.loads(data)
+    return {}
 
 def search_wayback(query):
-    url = "https://web-beta.archive.org/__wb/search/anchor?q="
-    #url = 'http://ia803500.us.archive.org/api/v1/hostsearch?q='
+    url = "https://web-beta.archive.org/__wb/search/host?q="
     r = requests.get(url + query)
     return r.json()
 
@@ -90,15 +205,40 @@ def get_searchinside_data(identifier, q, callback=''):
     })
     return r.json()
 
+def map_searchinside_to_iiif(identifier, q, idx=0):
+    result = get_searchinside_data(identifier, q)
+    if result['matches']:
+        match = result['matches'][idx]['par'][0]
+        
+        # left, top, width, height
+        width = (match['r'] - match['l'])
+        height = (match['b'] - match['t'])
+        url = '%s/%s$%s/%s,%s,%s,%s/full/0/default.jpg' % (
+            iiif_url, identifier, match['page'],
+            match['l'], match['t'], width, height
+        )
+        return requests.get(url, stream=True).content
 
-def items(iid=None, page=1, limit=100, filters=""):
+def items(iid=None, query="", page=1, limit=100, fields="", sorts="",
+          cursor=None, version=''):
     # aaron's idea: Weekly dump of ID of all identifiers (gzip)
     # elastic search query w/ paging
     if iid:
         return item(iid)
     # 'all:1' also works
-    q = "NOT identifier:..*" + (" AND (%s)" % filters if filters else "")
+    q = "NOT identifier:..*" + (" AND (%s)" % query if query else "")
+    if version == 'v2':
+        return scrape(query=q, fields=fields, sorts=sorts, count=limit,
+                      cursor=cursor)
     return search(q, page=page, limit=limit)
+
+
+def olpage_hack(archive_id):
+    return requests.get('https://openlibrary.org/ia/%s' % archive_id,
+                        allow_redirects=True, timeout=None).content
+
+def get_olia_metadata(archive_id):
+    return requests.get(OL_API % archive_id).json()
 
 
 def item(iid):
@@ -106,6 +246,20 @@ def item(iid):
         return requests.get('%s/metadata/%s' % (API_BASEURL, iid)).json()
     except ValueError as v:
         return v
+
+
+def librivox(ocaid):
+    from bs4 import BeautifulSoup
+    metadata = item(ocaid)['metadata']
+    desc = metadata['description']
+    soup = BeautifulSoup(desc, 'html.parser')
+    for a in soup.findAll('a'):
+        if 'librivox.org/' in a['href'] and not a['href'].endswith('.org/'):
+            return a['href']
+    return None
+    html = requests.get(url).content
+    soup = BeautifulSoup(html, 'html.parser')
+    table = soup.findAll('table', {'class': 'metatable'})[0]
 
 
 def download(iid, filename, headers=None):
@@ -136,7 +290,6 @@ def fulltext_search(text, collection=None, ids=False, names=False, hits=False):
 
     def get_title(fields):
         return fields['title'][0] if 'title' in fields else ''
-
 
     if ids and names and hits:
         return {
@@ -203,6 +356,40 @@ def get_arcade_games(query=None, page=1, limit=1000):
         'mediatype:"software" AND ' \
         'emulator:*' + ((' AND %s' % query) if query else '')
     return search(q, page=page, limit=limit, sort="sort%5B%5D=downloads+desc")
+
+
+def scrape(query, fields="", sorts="", count=100, cursor="", security=True):
+    """
+    params:
+        query: the query (using the same query Lucene-like queries supported by Internet Archive Advanced Search.
+        fields: Metadata fields to return, comma delimited
+        sorts: Fields to sort on, comma delimited (if identifier is specified, it must be last)
+        count: Number of results to return (minimum of 100)
+        cursor: A cursor, if any (otherwise, search starts at the beginning)
+    """
+    if not query:
+        raise ValueError("GET 'query' parameters required")
+
+    if int(count) > 1000 and security:
+        raise MaxLimitException("Limit may not exceed 1000.")
+
+    #sorts = sorts or 'date+asc,createdate'
+    fields = fields or 'identifier,title'
+
+    params = {
+        'q': query
+    }
+    if sorts:
+        params['sorts'] = sorts
+    if fields:
+        params['fields'] = fields
+    if count:
+        params['count'] = count
+    if cursor:
+        params['cursor'] = cursor
+
+    r = requests.get(SCRAPE_API, params=params)
+    return r.json()
 
 def search(query, page=1, limit=100, security=True, sort=None, fields=None):
     if not query:

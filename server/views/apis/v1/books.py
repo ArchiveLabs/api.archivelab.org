@@ -10,211 +10,163 @@
     :license: see LICENSE for more details.
 """
 
-from flask import Response, request, jsonify, render_template
+from flask import Response, request, jsonify, render_template, send_file
 from flask.views import MethodView
 from sqlalchemy.orm.attributes import flag_modified
 from views import rest_api, paginate
 from api import books as api
 from api.archive import item, items, mimetype, download, \
-    get_book_data
+    get_book_data, get_book_page, get_book_iiif_manifest
+from api.archive import search, fulltext_search, \
+    map_searchinside_to_iiif, get_searchinside_data, get_wordsinside_data, \
+    search_wayback, get_bookpage_ocr, get_bookpage_annotations, \
+    get_book_annotations, get_toc, get_toc_page, get_book_fulltext
+from configs import iiif_url
 
 
-
-class Collections(MethodView):
+class BookMetadata(MethodView):
     @rest_api
-    def get(self, cid=None):
-        if cid:
-            return api.Collection.get(cid).dict(books=True)
-        return {
-            'collections': [c.dict() for c in api.Collection.all()]
-        }
+    def get(self, archive_id):
+        return item(archive_id)
 
 
-class Collection(MethodView):
-    @rest_api
-    def get(self, cid):
-        collection = api.Collection.get(cid)
-        return collection.dict(books=True, collections=True)
-
-
-class Authors(MethodView):
-    @rest_api
-    def get(self, aid=None):
-        if aid:
-            return api.Author.get(aid).dict(books=True)
-        return {
-            'authors': [author.dict(books=True) for author in
-                        api.Author.all()]
-        }
-
-
-class Sequences(MethodView):
-    @rest_api
-    def get(self):
-        return {
-            'sequences': [s.dict() for s in api.Sequence.all()]
-        }
-
-
-class Books(MethodView):
+class BookIIIFManifest(MethodView):
     @rest_api
     def get(self, archive_id=None):
-        try:
-            if archive_id:
-                return api.Book.get(archive_id=archive_id).dict()
-            return {
-                'book': [book.dict() for book in 
-                         api.Book.all()]
-            }
-        except Exception:
-            return item(archive_id)
+        """Returns book metadata"""
+        return get_book_iiif_manifest(archive_id, request.url_root)
 
 
-class BookData(MethodView):
+class BookIAManifest(MethodView):
     def get(self, archive_id=None):
         """Returns book metadata"""
         return jsonify(get_book_data(archive_id))
 
 
-class Admin(MethodView):
-    def get(self):
-        authors = sorted([a.dict(names=True, books=True)
-                          for a in api.Author.all()],
-                         key=lambda a: a['id'], reverse=True)
-        books = sorted([b.dict() for b in api.Book.all()],
-                       key=lambda b: b['id'], reverse=True)
-        seqs = [s.dict() for s in api.Sequence.all()]
-        return render_template(
-            'admin.html', authors=authors, books=books, seqs=seqs)
-
-
-class SequencesPage(MethodView):
-
-    def get(self, sid=None):
-        if sid:
-            return render_template('sequence.html', sequence=api.Sequence.get(sid))
-        sequences = [s.dict() for s in api.Sequence.all()]
-        return render_template('sequences.html', sequences=sequences, len=len)
-
-
-    def post(self):
-        pass
-
-
-class AuthorPage(MethodView):
-
-    def get(self, aid=None):
-        if aid:
-            return render_template('author.html', author=api.Author.get(aid))
-        authors = [author.dict(books=True) for author in api.Author.all()]
-        return render_template('authors.html', authors=authors, len=len)
-
+class BookTOCManifest(MethodView):
     @rest_api
-    def post(self):
-        i = request.form
-        olid = i.get('olid')
-        name = i.get('name')
+    def get(self, archive_id, page=None):
+        """Test case: businessstatisti00blac"""
+        toc_pages = get_toc(archive_id)
+        return {'toc': toc_pages}
 
-        try:
-            a = api.Author.get(name=name)
-            a.olid = olid
-        except:
-            a = api.Author(name=name, olid=olid)
-            a.create()
+class BookTOC(MethodView):
+    def get(self, archive_id, page=None):
+        """Test case: businessstatisti00blac"""
+        toc_page = get_toc_page(archive_id, page)
+        return send_file(toc_page)
 
-        aka = i.get('aka')
-        if aka:
-            for alias in aka.split(','):
-                an = api.AuthorName(name=alias.strip(), author_id=a.id)
-                an.create()
-                a.names.append(an)
-            a.save()                
-
-        book_ids = i.get('bids')
-        if book_ids:
-            book_ids = [int(b) for b in i.get('bids', None).replace(' ', '').split(',')]
-            for bid in book_ids:
-                a.books.append(api.Book.get(bid))
-            a.save()
-        return a.dict()
-
-
+class BookPages(MethodView):
+    @rest_api
+    def get(self, archive_id):
+        return {
+            'pages': [page for page in get_book_data(archive_id)['leafNums']
+                      if page]
+        }
 
 
 class BookPage(MethodView):
-    def get(self, archive_id):
-        # get all sequences containing this book
-        ## get all books following this book in a sequence
-        # get all collections containing this book
+    def get(self, archive_id, page):
+        r = get_book_page(archive_id, page, request.url_root)
+        return Response(r.content, mimetype=r.headers['content-type'])
 
-        book = api.Book.get(archive_id=archive_id)
-        author_ids = ', '.join(str(int(a.id)) for a in book.authors)
-        return render_template(
-            'book.html', book=book, aids=author_ids)
+class Cite(MethodView):
+    def get(self, archive_id=None):
+        i = request.args
+        q = i.get('q', '') or i.get('text', '')
+        cite = i.get('cite', '')
+        if cite:
+            try:
+                idx = int(cite)
+            except ValueError:
+                raise ValueError("cite must be int")
+            return Response(
+                map_searchinside_to_iiif(archive_id, q=q, idx=idx),
+                mimetype="image/jpg")
+
+class SearchInside(MethodView):
+    @rest_api
+    def get(self, archive_id=None):
+        i = request.args
+        q = i.get('q', '') or i.get('text', '')
+        callback = i.get('callback', '')
+        if q:
+            return get_searchinside_data(archive_id, q=q, callback=callback)
+        return get_wordsinside_data(archive_id, callback=callback)
+
+
+class WordRegions(MethodView):
+    @rest_api
+    def get(self, archive_id, page):
+        i = request.args
+        mode = i.get('mode', 'paragraphs')
+        return {'ocr': get_bookpage_ocr(archive_id, page, mode=mode)}
+
+class BookText(MethodView):
+    def get (self, archive_id):
+        fulltext = get_book_fulltext(archive_id, stringio=True)
+        filename = "%s_fulltext.txt" % archive_id
+        if fulltext:
+            return send_file(fulltext, mimetype='text/plain',
+                             as_attachment=True, attachment_filename=filename)
+
+class PageText(MethodView):
+    def get(self, archive_id, page):
+        pageocr = get_bookpage_ocr(archive_id, page)
+        pagenum = request.args.get('page', '')
+        plaintext = '\n'.join([block[0] for block in pageocr])
+        if pagenum:
+            plaintext = 'Page %s\n%s' % (page, plaintext)
+        return Response(plaintext, mimetype='text/plain')
 
     @rest_api
-    def post(self, archive_id=None):
-        i = request.form
-        if i.get('method') == "delete" and archive_id:
-            return self.delete(archive_id)
+    def post(self, archive_id, page):
+        correction = request.json.get('correction')
+        api.Ocr
+        return {'correction': correction}
 
-        archive_id = i.get('archive_id')
-        name = i.get('name')
-        desc = i.get('description')
-
-        try:
-            b = api.Book.get(archive_id=archive_id)
-        except:
-            b = api.Book(archive_id=archive_id)
-            b.create()
-
-        author_ids = i.get('aids')
-        if author_ids:
-            author_ids = [a.strip() for a in author_ids.split(',')]
-            for aid in author_ids:
-                b.authors.append(api.Author.get(aid))
-
-        collection_ids = i.get('cids')
-        if collection_ids:
-            cids = [int(c.strip()) for c in collection_ids.split(',')]
-            for cid in cids:
-                b.collections.append(api.Collection.get(cid))
-                
-        if name:
-            b.name = name
-
-        if desc:
-            b.data[u'description'] = desc
-            flag_modified(b, 'data')
-
-        b.save()
-
-        return b.dict()
+class PageAudio(MethodView):
+    def get(self, archive_id, page):
+        api.Audible.get(archive_id=archive_id, page_num=page)
+        return Response("coming soon")
 
     @rest_api
-    def delete(self, archive_id):
-        i = request.form
-        try:
-            b = api.Book.get(archive_id=archive_id)
-            b.remove()
-        except:
-            return
+    def post(self, archive_id, page):
+        audible = request.json.get('audible')        
+        return {'audible': audible}
 
+class Annotations(MethodView):
+    @rest_api
+    def get(self, archive_id, page=None):
+        crosslinks = request.args.get('crosslinks', None)
+        if not page:
+            return get_book_annotations(archive_id, crosslinks=crosslinks)
+        return get_bookpage_annotations(archive_id, page)
+
+class Endpoints(MethodView):
+    @rest_api
+    def get(self, uri=None):      
+        urlbase = request.base_url
+        return dict([(urls[i+1].__name__.split(".")[-1],
+                      urlbase + urls[i])
+                     for i in range(len(urls))[::2]])
 
 urls = (
-    '/collections/<cid>', Collection,
-    '/collections', Collections,
-    '/authors/<aid>', Authors,
-    '/authors', Authors,
-    '/sequences', Sequences,
-    '/admin', Admin,
-    '/b/<archive_id>', BookPage,
-    '/a/<aid>', AuthorPage,
-    '/a', AuthorPage,
-    '/s', SequencesPage,
-    '/b', BookPage,
-    #'/<archive_id>/ocr', Ocr,
-    '/<archive_id>/metadata', BookData,
-    '/<archive_id>', Books,
-    '', Books
+    '/<archive_id>/searchinside', SearchInside,
+    '/<archive_id>/search', SearchInside,
+    '/<archive_id>/cite', Cite,
+    '/<archive_id>/pages/<page>/ocr', WordRegions,
+    '/<archive_id>/pages/<page>/plaintext', PageText,
+    '/<archive_id>/pages/<page>/audible', PageAudio,
+    '/<archive_id>/pages/<page>/annotations', Annotations,
+    '/<archive_id>/pages/<page>', BookPage,
+    '/<archive_id>/pages', BookPages,
+    '/<archive_id>/toc/<page>', BookTOC,
+    '/<archive_id>/toc', BookTOCManifest,
+    '/<archive_id>/fulltext', BookText,
+    '/<archive_id>/annotations', Annotations,
+    '/<archive_id>/iiif_manifest', BookIIIFManifest,
+    '/<archive_id>/ia_manifest', BookIAManifest,
+    '/<archive_id>', BookMetadata,
+    '', Endpoints,
     )

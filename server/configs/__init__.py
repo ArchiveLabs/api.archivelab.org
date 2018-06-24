@@ -53,7 +53,7 @@ DB_URI = '%(dbn)s://%(user)s:%(pw)s@%(host)s:%(port)s/%(db)s?client_encoding=utf
     'port': config.getdef('db', 'port', '5432'),
     'host': config.getdef('db', 'host', 'localhost'),
     'user': config.getdef('db', 'user', 'librarian'),
-    'db': config.getdef('db', 'db', 'books'),
+    'db': config.getdef('db', 'db', 'lists'),
     'pw': config.getdef('db', 'pw', '')
 }
 

@@ -2,6 +2,8 @@
 settings.cfg
 uwsgi.ini
 #*
+*\#*
+server/static/data/groovebox.sql
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

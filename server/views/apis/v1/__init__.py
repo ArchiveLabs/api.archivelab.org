@@ -11,12 +11,12 @@
 
 import requests
 from views import rest_api
-from flask import Response, request
+from flask import Response, request, render_template
 from flask.views import MethodView
 from flask import request
 from views.apis.v1 import items, collections, search, iiif, pragma, \
-    music, books, analytics, television, scholar, webtorrent, \
-    images, wayback, arcade, availability
+    music, analytics, television, scholar, webtorrent, \
+    images, wayback, arcade, availability, classics, books
 from configs import API_BASEURL
 
 
@@ -28,6 +28,10 @@ class Endpoints(MethodView):
                       urlbase + urls[i])
                      for i in range(len(urls))[::2]])
 
+class Docs(MethodView):
+    def get(self):
+        return render_template('docs.html')
+
 
 class Items(MethodView):
     @rest_api
@@ -38,6 +42,7 @@ class Items(MethodView):
 
 
 urls = (
+    '/docs', Docs,
     '/items', items,
     '/search', search,
     '/collections', collections,
@@ -49,6 +54,7 @@ urls = (
     '/pragma', pragma,
     '/scholar', scholar,
     '/books', books,
+    '/classics', classics,
     '/analytics', analytics,
     '/television', television,
     '/webtorrents', webtorrent,

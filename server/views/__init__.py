@@ -47,13 +47,15 @@ def paginate(page=1, limit=100):
             _page = request.args.get('page', page)
             _limit = request.args.get('limit', limit)
             try:
-                r = f(*args, page=_page, limit=_limit, **kwargs)['response']                
-                r['ids'] = [d['identifier'] for d in r.pop('docs')]
-                r['next'] = int(r['start']) + int(_limit)
+                r = f(*args, page=_page, limit=_limit, **kwargs)
+                if 'response' in r:
+                    r = r['response']
+                    r['ids'] = [d['identifier'] for d in r.pop('docs')]
+                    r['next'] = int(r['start']) + int(_limit)
+                    r['page'] = int(_page)
             except Exception as e:
                 r = {'error': str(e), 'ids': []}
             r['limit'] = int(_limit)
-            r['page'] = int(_page)
             return r
         return inner
     return outer
@@ -70,11 +72,11 @@ def rest_api(f):
             db.remove()
     return inner
 
-def search(model, limit=50, lazy=True):
+def search(model, limit=50):
     query = request.args.get('query')
     field = request.args.get('field')
     limit = min(request.args.get('limit', limit), limit)
     if all([query, field, limit]):
-        return model.search(query, field=field, limit=limit, lazy=lazy)
+        return model.search(query, field=field, limit=limit)
     raise ValueError('Query and field must be provided. Valid fields are: %s' \
                          %  model.__table__.columns.keys())

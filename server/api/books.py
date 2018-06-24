@@ -97,7 +97,7 @@ class RemoteId(core.Base):
     __tablename__ = "remote_ids"
 
     id = Column(BigInteger, primary_key=True)    
-    source_id = Column(BigInteger, ForeignKey('authors.id'), nullable=False)
+    source_id = Column(BigInteger, ForeignKey('sources.id'), nullable=False)
     remote_id = Column(Unicode, nullable=False, unique=True)
 
 
@@ -176,11 +176,17 @@ class Author(core.Base):
 
     def dict(self, names=False, books=False):
         author = super(Author, self).dict()
+        data = author.pop('data')
         author['name'] = self.name
+        if data:
+            if data.get('years'):
+                author['years'] = data['years']
+            if data.get('languages'):
+                author['languages'] = data['languages']
         author['remote_ids'] = [rid.dict() for rid in self.remote_ids]
         author['created'] = author['created'].ctime()
         if books:
-            author['books'] = [book.dict() for book in self.books]
+            author['books'] = [book.dict(minimal=True) for book in self.books]
         if names:
             author['names'] = [an.name for an in self.names]
         return author
@@ -206,6 +212,29 @@ class AuthorName(core.Base):
     author = relationship('Author', foreign_keys=[author_id], backref="names",
                           primaryjoin="AuthorName.author_id==Author.id")
 
+class Ocr(core.Base):
+
+    __tablename__ = "corrections"
+
+    id = Column(BigInteger, primary_key=True)
+    archive_id = Column(Unicode, nullable=False)
+    page_num = Column(Integer, nullable=False)
+    page_text = Column(Unicode, nullable=False, unique=True)
+    created = Column(DateTime(timezone=False), default=datetime.utcnow,
+                     nullable=False)
+
+class Audible(core.Base):
+
+    __tablename__ = "audibles"
+
+    """Create an audible archive.org user, create an audible item for each book w/ the audio files"""
+
+    id = Column(BigInteger, primary_key=True)
+    archive_id = Column(Unicode, nullable=False)
+    page_num = Column(Integer, nullable=False)
+    recording_url = Column(Unicode, nullable=False)
+    created = Column(DateTime(timezone=False), default=datetime.utcnow,
+                     nullable=False)
 
 class Book(core.Base):
 
@@ -224,9 +253,9 @@ class Book(core.Base):
 
 
     def create_pre_hook(self):
-        print("prehook")
         self.data = ia.get_item(self.archive_id).metadata
         self.name = self.data.get('title')
+        #self.data.update(get_olia_metadata(self.archive_id))
         self.cover_url = 'https://archive.org/services/img/' + self.archive_id
 
 
@@ -249,7 +278,8 @@ class Book(core.Base):
 
 class Sequence(core.Base):
 
-    """TODO: Create custom IIIF manifests based on the information inside `data` json"""
+    """TODO: Create custom IIIF manifests based on the information inside
+    `data` json"""
 
     __tablename__ = "sequences"
 
@@ -282,32 +312,39 @@ class Users(core.Base):
 
 # Contest (downvote) a sequence or collection, fork
 
-collections = {"Language Learning": [], "Survival": [], "Greek Classics": [], "Children's Books": [],
-               "Principles of Design": [], "Magazines & Periodicals": [], "Revolutionary Research": [],
-               "Modern Non-fiction": [
-                   "gonetomorrow00bant", "scarecrow00mich",
-                   "roughjustice00jack", "runninghot00jayn"
-               ], "Textbooks": {
-                   "Security": ["crackingdessecre00elec"],
-                   "Mathematics": ["firstyearalgebra00well",
-                                   "fishsarithmeticn02fish"
-                               ],
-                   "Psychology": [],
-                   "Science": {
-                       "Physics": [],
-                       "Biology": []
-                   }
-               }, "Historical": [],
-               "Military Treatise & Tactics": ["artofwaroldestmi00suntuoft"],
-               "Self Improvement": [], "Poetry": [],
-               "American Classics": ["worksofcharlesdd04dick"],
-               "Literary Compilations": ["masterpiecesofwo00gild"],
-               "Poetry": ["worksofedgaralle01poee"],
-               "Reference Books": ["ourwonderworldli07chic"],
-               "Craftwork": ["ourwonderworldli07chic"],
-               "Religious Texts": [],
-               "Plays": []
-           }
+collections = {
+    "Language Learning": [],
+    "Survival": [],
+    "Greek Classics": [],
+    "Children's Books": [],
+    "Principles of Design": [],
+    "Magazines & Periodicals": [],
+    "Revolutionary Research": [],
+    "Modern Non-fiction": [
+        "gonetomorrow00bant", "scarecrow00mich",
+        "roughjustice00jack", "runninghot00jayn"],
+    "Textbooks": {
+        "Security": ["crackingdessecre00elec"],
+        "Mathematics": ["firstyearalgebra00well",
+                        "fishsarithmeticn02fish"],
+        "Psychology": [],
+        "Science": {
+            "Physics": [],
+            "Biology": []
+        }
+    },
+    "Historical": [],
+    "Military Treatise & Tactics": ["artofwaroldestmi00suntuoft"],
+    "Self Improvement": [],
+    "Poetry": [],
+    "American Classics": ["worksofcharlesdd04dick"],
+    "Literary Compilations": ["masterpiecesofwo00gild"],
+    "Poetry": ["worksofedgaralle01poee"],
+    "Reference Books": ["ourwonderworldli07chic"],
+    "Craftwork": ["ourwonderworldli07chic"],
+    "Religious Texts": [],
+    "Plays": []
+}
 
 
 def create_tables():
@@ -353,27 +390,28 @@ def search_all(query, page=0, limit=0):
             books.extend(_author.books)
             print(books)             
 
-
     for author in authors:
         books.extend(author.books)
 
-    _books = dict((b.archive_id, b.dict()) for b in list(set(books)))
+    _books = [b.dict() for b in books]
 
     fulltext_results = fulltext_search(query)['hits']['hits']
     for hit in fulltext_results:
         archive_id = hit['fields']['identifier'][0]
-        if archive_id in _books.keys():
-            _books[archive_id]['matches'] = hit['highlight']['text']
+
+        for b in _books:
+            if archive_id == b['archive_id']:
+                b['matches'] = hit['highlight']['text']
         else:
-            _book = Book.get(archive_id=archive_id).dict()
-            _book['matches'] = hit['highlight']['text']
-            _books[archive_id] = _book
+            book = Book.get(archive_id=archive_id).dict()
+            book['matches'] = hit['highlight']['text']
+            books.append(book)
 
     return {
         'sequences': [s.dict() for s in sequences],
         'collections': [c.dict() for c in collections],
         'authors': [a.dict() for a in list(set(authors))],
-        'books': list(_books.values())
+        'books': _books
     }
 
 
