@@ -99,8 +99,9 @@ class WordRegions(MethodView):
     @rest_api
     def get(self, archive_id, page):
         i = request.args
+        access, secret = i.get('access'), i.get('secret')
         mode = i.get('mode', 'paragraphs')
-        return {'ocr': get_bookpage_ocr(archive_id, page, mode=mode)}
+        return {'ocr': get_bookpage_ocr(archive_id, page, mode=mode, access=access, secret=secret)}
 
 class BookText(MethodView):
     def get (self, archive_id):
@@ -112,18 +113,25 @@ class BookText(MethodView):
 
 class PageText(MethodView):
     def get(self, archive_id, page):
-        pageocr = get_bookpage_ocr(archive_id, page)
+        access, secret = request.args.get('access'), request.args.get('secret')
+        pageocr = get_bookpage_ocr(archive_id, page, access=access, secret=secret)
         pagenum = request.args.get('page', '')
         plaintext = '\n'.join([block[0] for block in pageocr])
         if pagenum:
             plaintext = 'Page %s\n%s' % (page, plaintext)
         return Response(plaintext, mimetype='text/plain')
 
-    @rest_api
-    def post(self, archive_id, page):
-        correction = request.json.get('correction')
-        api.Ocr
-        return {'correction': correction}
+    def post(self, archive_id, page):        
+        data = request.get_json() or request.form or {'access': None, 'secret': None}
+        pagenum = request.args.get('page', '')
+        access = data.get('access')
+        secret = data.get('secret')
+        pageocr = get_bookpage_ocr(archive_id, page, access=access, secret=secret)
+        pagenum = request.args.get('page', '')
+        plaintext = '\n'.join([block[0] for block in pageocr])
+        if pagenum:
+            plaintext = 'Page %s\n%s' % (page, plaintext)
+        return Response(plaintext, mimetype='text/plain')
 
 class PageAudio(MethodView):
     def get(self, archive_id, page):

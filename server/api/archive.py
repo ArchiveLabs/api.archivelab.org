@@ -30,8 +30,8 @@ REVERSE_IMAGE_SEARCH_URL = "http://rootabout.com/search.php"
 ADVANCED_SEARCH = '%s/advancedsearch.php?' % API_BASEURL
 FULLTEXT_SEARCH_API = "http://books-search0.us.archive.org/api/v0.1/search"
 BOOK_SEARCHINSIDE_URL = 'http://%s/fulltext/inside.php'
-#BOOK_OCR_URL = 'https://%s/BookReader/BookReaderGetTextWrapper.php'
-BOOK_OCR_URL = 'https://%s/~mek/getpage.php'
+LOAN_URL = 'https://archive.org/services/loans/beta/loan/index.php?action=%s&identifier=%s&access=%s&secret=%s'
+BOOK_OCR_URL = 'https://%s/BookReader/BookReaderGetTextWrapper.php'
 
 OL_API = 'https://openlibrary.org/ia/%s.json'
 
@@ -164,7 +164,15 @@ def get_toc(identifier):
                  pages[i]['pageType']['$'] == 'Contents']
     return toc_pages
 
-def get_bookpage_ocr(identifier, page, mode="paragraphs"):
+def get_bookpage_ocr(identifier, page, mode="paragraphs", access=None, secret=None):
+    cookies = {}
+    if access and secret:
+        try:
+            r = requests.post(LOAN_URL % ('create_token', identifier, access, secret))
+            if r.json()['success']:
+                cookies['loan-%s' % identifier] = r.json()['token']
+        except:
+            pass
     metadata = requests.get('%s/metadata/%s' % (API_BASEURL, identifier)).json()
     location = {
         'dir': metadata['dir'],
@@ -181,7 +189,7 @@ def get_bookpage_ocr(identifier, page, mode="paragraphs"):
                 'page': page,
                 'callback': None,
                 'mode': mode
-            })
+            }, cookies=cookies)
             data = r.content.decode('utf-8')[14:-3]
             return json.loads(data)
     return {}

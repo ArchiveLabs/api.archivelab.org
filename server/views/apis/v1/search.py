@@ -80,6 +80,18 @@ class WaybackSearch(MethodView):
         return {'matches': search_wayback(query)}
 
 
+class OpenLibraryFulltextSearch(MethodView):
+
+    def get(self):
+        i = request.args
+        q = i.get('q', '')
+        page = i.get('page', '1')
+        import requests
+        url = 'https://search-text.us.archive.org/api/v1/search?q=%s&page=%s' % (q, page)
+        r = requests.get(url)
+        return r.content
+
+
 urls = (
     '/books/<bid>/regions', SearchInside,
     '/books/<bid>', SearchInside,
@@ -87,5 +99,6 @@ urls = (
     '/librivox/<ocaid>', Librivox,
     '/classics', FulltextSearchClassics,
     '/wayback', WaybackSearch,
+    '/openlibrary', OpenLibraryFulltextSearch,
     '', Search
 )
