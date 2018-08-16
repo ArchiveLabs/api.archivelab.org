@@ -46,14 +46,24 @@ class InvalidJSONException(Exception):
 def mimetype(f):
     return mimetypes.guess_type(f)[0]
 
-
 def resolve_server(identifier):
+    """
+    Returns:
+      a dict containing this item's:
+        server: e.g. ia601507.us.archive.org
+        dir: on disk containing files, e.g. /2/items/recurringwordsth00ethe
+    """
     metadata = requests.get('%s/metadata/%s' % (API_BASEURL, identifier)).json()
     return {
         'dir': metadata['dir'],
         'server': metadata['server']
     }
 
+def tts_url(identifier, text):
+    server = (resolve_server(identifier) or {}).get('server', 'ia601507.us.archive.org')
+    url = 'https://%s/BookReader/BookReaderGetTTS.php?string=%s&format=.mp3' \
+          % (server, text)
+    return url
 
 def get_book_data(identifier):
     location = resolve_server(identifier)

@@ -10,7 +10,8 @@
     :license: see LICENSE for more details.
 """
 
-from flask import Response, request, jsonify, render_template, send_file
+from flask import Response, request, jsonify, render_template, \
+    redirect, send_file
 from flask.views import MethodView
 from sqlalchemy.orm.attributes import flag_modified
 from views import rest_api, paginate
@@ -20,7 +21,8 @@ from api.archive import item, items, mimetype, download, \
 from api.archive import search, fulltext_search, \
     map_searchinside_to_iiif, get_searchinside_data, get_wordsinside_data, \
     search_wayback, get_bookpage_ocr, get_bookpage_annotations, \
-    get_book_annotations, get_toc, get_toc_page, get_book_fulltext
+    get_book_annotations, get_toc, get_toc_page, get_book_fulltext, \
+    tts_url
 from configs import iiif_url
 
 
@@ -63,7 +65,6 @@ class BookPages(MethodView):
             'pages': [page for page in get_book_data(archive_id)['leafNums']
                       if page]
         }
-
 
 class BookPage(MethodView):
     def get(self, archive_id, page):
@@ -127,7 +128,6 @@ class PageText(MethodView):
         access = data.get('access')
         secret = data.get('secret')
         pageocr = get_bookpage_ocr(archive_id, page, access=access, secret=secret)
-        pagenum = request.args.get('page', '')
         plaintext = '\n'.join([block[0] for block in pageocr])
         if pagenum:
             plaintext = 'Page %s\n%s' % (page, plaintext)
@@ -135,13 +135,22 @@ class PageText(MethodView):
 
 class PageAudio(MethodView):
     def get(self, archive_id, page):
-        api.Audible.get(archive_id=archive_id, page_num=page)
-        return Response("coming soon")
+        access, secret = request.args.get('access'), request.args.get('secret')
+        pageocr = get_bookpage_ocr(archive_id, page, access=access, secret=secret)
+        pagenum = request.args.get('page', '')
+        plaintext = '\n'.join([block[0] for block in pageocr])
+        if pagenum:
+            plaintext = 'Page %s\n%s' % (page, plaintext)
+        return redirect(tts_url(archive_id, plaintext))
 
-    @rest_api
     def post(self, archive_id, page):
-        audible = request.json.get('audible')        
-        return {'audible': audible}
+        data = request.get_json() or request.form or {'access': None, 'secret': None}
+        pageocr = get_bookpage_ocr(archive_id, page, access=access, secret=secret)
+        pagenum = request.args.get('page', '')
+        plaintext = '\n'.join([block[0] for block in pageocr])
+        if pagenum:
+            plaintext = 'Page %s\n%s' % (page, plaintext)
+        return redirect(tts_url(archive_id, plaintext))
 
 class Annotations(MethodView):
     @rest_api
@@ -165,7 +174,7 @@ urls = (
     '/<archive_id>/cite', Cite,
     '/<archive_id>/pages/<page>/ocr', WordRegions,
     '/<archive_id>/pages/<page>/plaintext', PageText,
-    '/<archive_id>/pages/<page>/audible', PageAudio,
+    '/<archive_id>/pages/<page>/tts', PageAudio,
     '/<archive_id>/pages/<page>/annotations', Annotations,
     '/<archive_id>/pages/<page>', BookPage,
     '/<archive_id>/pages', BookPages,
