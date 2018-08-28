@@ -11,7 +11,7 @@
 """
 
 import internetarchive as ia
-from flask import render_template, Response, request
+from flask import render_template, Response, request, jsonify
 from flask.views import MethodView
 from views import rest_api, paginate
 from api.archive import item, items, mimetype, download
@@ -70,8 +70,27 @@ class File(MethodView):
                         status=r.status_code,
                         mimetype=mimetype(filename))
 
+class Manifests(MethodView):
+    def get(self, iid, manifest=None):
+        metadata = item(iid)['metadata']
+        if manifest:
+            return jsonify({})
+        result = {
+
+        }
+        if 'librivoxaudio' in metadata.get('collection', []):
+            result['opds_audio'] = request.url_root + 'books/%s/opds_audio_manifest' % (iid)
+
+        if metadata.get('mediatype') == 'texts':
+            result['iiif'] = request.url_root + 'iiif/%s/manifest.json' % (iid)
+            result['ia_book'] = request.url_root + 'books/%s/ia_manifest' % (iid)
+            result['opds'] = 'https://bookserver.archive.org/catalog/%s' % (iid)
+
+        return jsonify(result)
+
 
 urls = (
+    '/<iid>/manifests', Manifests,
     '/<iid>/metadata', Metadata,
     '/<iid>/reviews', Reviews,
     '/<iid>/files/<path:filename>', File,

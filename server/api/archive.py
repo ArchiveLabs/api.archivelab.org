@@ -11,6 +11,7 @@
 """
 
 import json
+import time
 import requests
 import base64
 import mimetypes
@@ -97,12 +98,75 @@ def get_toc_page(identifier, page):
 
     url = BOOK_PAGE_URL % (server)
     url += '?id=%s&itemPath=%s&server=%s&page=leaf%s' % (identifier, path, server, page)
-    print(url)
     r = requests.get(url, stream=True)
     strIO = StringIO()
     strIO.write(r.content)
     strIO.seek(0)
     return strIO
+
+def time2sec(t):
+    """Converts h:m:s to int(sec)
+    https://stackoverflow.com/questions/10663720/converting-a-time-string-to-seconds-in-python
+    """
+    t = str(t)
+    if t.count(':') == 1:
+        pt = time.strptime(t,'%M:%S')
+        total_seconds = pt.tm_sec + (pt.tm_min * 60)
+    elif t.count(':') == 2:
+        pt = time.strptime(t,'%H:%M:%S')
+        total_seconds = pt.tm_sec + (pt.tm_mind * 60) + (pt.tm_hour * 3600)
+    return total_seconds
+
+def get_book_opds_audio_manifest(identifier, url_root):
+    data = item(identifier)
+    metadata = data['metadata']
+    reading_order = []
+    _tracks = data.get(identifier) or data.get('files')
+    sorter = lambda x: int(x.get('track', '') \
+                           if '/' not in x.get('track') \
+                           else x.get('track').split('/')[0])
+    tracks = sorted([track for track in _tracks if 
+                     track.get('bitrate') and track.get('track')],
+                    key=sorter)
+    for t in tracks:
+        reading_order.append(
+            {"href": "%s/download/%s/%s" % (
+                API_BASEURL, identifier, t.get('name')),
+             "type": "audio/mpeg", "bitrate": t.get('bitrate'),
+             "duration": time2sec(t['length']), "title": t.get('title')
+            })
+    manifest_url = url_root + 'books/%s/opds_audio_manifest' % identifier
+    links = [
+        {"href": "%s/services/img/%s" % (API_BASEURL, identifier),
+         "rel": "cover", "type": "image/jpeg",
+         "height": 180, "width": 180}
+    ]
+    resources = [
+        {"href": manifest_url, "type": "application/audiobook+json"}
+    ]    
+    librivox_id = metadata.get('external-identifer') and metadata.get('external-identifer').split('urn:librivox_id:')[1]
+    # Call Librivox API to get narrator info ...
+    return {
+        "@context": "http://readium.org/webpub-manifest/context.jsonld",
+        "metadata": {
+            "tracks": len(reading_order),
+            "@type": "https://bib.schema.org/Audiobook",
+            "librivox_id": librivox_id,
+            "identifier": '%s/details/%s' % (API_BASEURL, identifier),
+            "title": metadata.get('title'),
+            "author": metadata.get('creator'),
+            #"narrator": [],
+            "language": metadata.get('language', 'en'),
+            #"publisher": metadata.get('publisher'),
+            #"published": "2016-02-01",
+            #"modified": "2016-02-18T10:32:18Z",
+            "duration": sum(t['duration'] for t in reading_order)
+        },
+        "resources": resources,
+        "links": links,
+        "readingOrder": reading_order
+    }
+
 
 def get_book_iiif_manifest(identifier, url_root):
     url = "%s/%s/manifest.json" % (iiif_url, identifier)
@@ -267,6 +331,7 @@ def item(iid):
 
 
 def librivox(ocaid):
+    """This API should be deprecated in favor of https://librivox.org/api/info"""
     from bs4 import BeautifulSoup
     metadata = item(ocaid)['metadata']
     desc = metadata['description']

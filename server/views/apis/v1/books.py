@@ -17,7 +17,8 @@ from sqlalchemy.orm.attributes import flag_modified
 from views import rest_api, paginate
 from api import books as api
 from api.archive import item, items, mimetype, download, \
-    get_book_data, get_book_page, get_book_iiif_manifest
+    get_book_data, get_book_page, get_book_iiif_manifest,  \
+    get_book_opds_audio_manifest
 from api.archive import search, fulltext_search, \
     map_searchinside_to_iiif, get_searchinside_data, get_wordsinside_data, \
     search_wayback, get_bookpage_ocr, get_bookpage_annotations, \
@@ -30,6 +31,12 @@ class BookMetadata(MethodView):
     @rest_api
     def get(self, archive_id):
         return item(archive_id)
+
+
+class BookOpdsAudioManifest(MethodView):
+    @rest_api
+    def get(self, archive_id):
+        return get_book_opds_audio_manifest(archive_id, request.url_root)
 
 
 class BookIIIFManifest(MethodView):
@@ -182,6 +189,7 @@ urls = (
     '/<archive_id>/toc', BookTOCManifest,
     '/<archive_id>/fulltext', BookText,
     '/<archive_id>/annotations', Annotations,
+    '/<archive_id>/opds_audio_manifest', BookOpdsAudioManifest,
     '/<archive_id>/iiif_manifest', BookIIIFManifest,
     '/<archive_id>/ia_manifest', BookIAManifest,
     '/<archive_id>', BookMetadata,
