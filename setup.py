@@ -58,6 +58,9 @@ setup(
         'better-bencode',
         'bs4',
         'xmljson',
-        'html'
+        'html',
+        'sqlalchemy',
+        'internetarchive',
+        'psycopg2'
         ]
 )

@@ -494,11 +494,13 @@ def search(query, page=1, limit=100, security=True, sort=None, fields=None):
 
 def reverse_image_search(filename, base64img):
     mime = "data:%s;base64," % mimetype(filename)
-    r = requests.post(REVERSE_IMAGE_SEARCH_URL, data={
+    data = {
         "searchimg": "%s,%s" % (mime, base64img),
         "limit": "5",
-        "search": "ia"
-    })
+        "search": "ia",
+        "mode": "basic"
+    }
+    r = requests.post(REVERSE_IMAGE_SEARCH_URL, data=data)
     html = r.content
     try:
         from bs4 import BeautifulSoup
