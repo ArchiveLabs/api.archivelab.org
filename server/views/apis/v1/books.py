@@ -13,6 +13,7 @@
 from flask import Response, request, jsonify, render_template, \
     redirect, send_file
 from flask.views import MethodView
+import json
 from sqlalchemy.orm.attributes import flag_modified
 from views import rest_api, paginate
 from api import books as api
@@ -34,10 +35,9 @@ class BookMetadata(MethodView):
 
 
 class BookOpdsAudioManifest(MethodView):
-    @rest_api
     def get(self, archive_id):
-        return get_book_opds_audio_manifest(archive_id, request.url_root)
-
+        opds_manifest = get_book_opds_audio_manifest(archive_id, request.url_root)
+        return json.dumps(opds_manifest), 200, {'Content-Type': 'application/audiobook+json; charset=utf-8'}
 
 class BookIIIFManifest(MethodView):
     @rest_api
@@ -129,7 +129,7 @@ class PageText(MethodView):
             plaintext = 'Page %s\n%s' % (page, plaintext)
         return Response(plaintext, mimetype='text/plain')
 
-    def post(self, archive_id, page):        
+    def post(self, archive_id, page):
         data = request.get_json() or request.form or {'access': None, 'secret': None}
         pagenum = request.args.get('page', '')
         access = data.get('access')
@@ -169,7 +169,7 @@ class Annotations(MethodView):
 
 class Endpoints(MethodView):
     @rest_api
-    def get(self, uri=None):      
+    def get(self, uri=None):
         urlbase = request.base_url
         return dict([(urls[i+1].__name__.split(".")[-1],
                       urlbase + urls[i])

@@ -11,10 +11,11 @@
 """
 
 import internetarchive as ia
-from flask import render_template, Response, request, jsonify
+from flask import render_template, Response, request, jsonify, redirect
 from flask.views import MethodView
 from views import rest_api, paginate
-from api.archive import item, items, mimetype, download
+from api.archive import item, items, mimetype, download, resolve_server
+from configs import API_BASEURL
 
 class Items(MethodView):
     @rest_api
@@ -70,6 +71,27 @@ class File(MethodView):
                         status=r.status_code,
                         mimetype=mimetype(filename))
 
+class Generate(MethodView):
+    def get(self, iid, fmt=None):
+        bd = resolve_server(iid)['metadata']
+        encrypt = bool(int(request.args.get('encrypt', 0)))
+        reCache = bool(int(request.args.get('reCache', 0)))
+        metadata = bd['metadata']
+        files = bd.get('files')
+        if bd and fmt in ['epub', 'daisy', 'mobi']:
+            if metadata['mediatype'] == 'texts':
+                doc = next(f['name'].replace('_abbyy.gz', '')
+                           for f in files
+                           if f['name'].endswith('_abbyy.gz'))
+                url = 'https://%s/epub/index.php?id=%s&dir=%s&doc=%s&type=%s&debug=1' % (
+                    bd['server'], iid, bd['dir'], doc, fmt)
+                if reCache:
+                    url += "&reCache=1"
+                if not encrypt:
+                    url += "&skipenc=1"
+                return redirect(url)
+        return jsonify({"error": "invalid fmt %s" % bd})
+
 class Manifests(MethodView):
     def get(self, iid, manifest=None):
         metadata = item(iid)['metadata']
@@ -85,8 +107,9 @@ class Manifests(MethodView):
             result['iiif'] = request.url_root + 'iiif/%s/manifest.json' % (iid)
             result['ia_book'] = request.url_root + 'books/%s/ia_manifest' % (iid)
             result['opds'] = 'https://bookserver.archive.org/catalog/%s' % (iid)
-
-        return jsonify(result)
+        data = jsonify(result)
+        print(dir(data))
+        return data
 
 
 urls = (
@@ -95,6 +118,7 @@ urls = (
     '/<iid>/reviews', Reviews,
     '/<iid>/files/<path:filename>', File,
     '/<iid>/files', Files,
+    '/<iid>/generate/<fmt>', Generate,
     '/<iid>', Item,
     '', Items
     )

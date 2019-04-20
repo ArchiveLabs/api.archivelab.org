@@ -56,6 +56,7 @@ def resolve_server(identifier):
     """
     metadata = requests.get('%s/metadata/%s' % (API_BASEURL, identifier)).json()
     return {
+        'metadata': metadata,
         'dir': metadata['dir'],
         'server': metadata['server']
     }
@@ -92,7 +93,7 @@ def get_toc_page(identifier, page):
     """This should only be called by methods who can guarantee page is a
     Table of Contents page. Bypasses lending restrictions
     """
-    location = resolve_server(identifier)    
+    location = resolve_server(identifier)
     server = location['server']
     path = location['dir']
 
@@ -125,7 +126,7 @@ def get_book_opds_audio_manifest(identifier, url_root):
     sorter = lambda x: int(x.get('track', '') \
                            if '/' not in x.get('track') \
                            else x.get('track').split('/')[0])
-    tracks = sorted([track for track in _tracks if 
+    tracks = sorted([track for track in _tracks if
                      track.get('bitrate') and track.get('track')],
                     key=sorter)
     for t in tracks:
@@ -139,19 +140,18 @@ def get_book_opds_audio_manifest(identifier, url_root):
     links = [
         {"href": "%s/services/img/%s" % (API_BASEURL, identifier),
          "rel": "cover", "type": "image/jpeg",
-         "height": 180, "width": 180}
+         "height": 180, "width": 180},
+        {"href": manifest_url,
+         "rel": "self", "type": "application/audiobook+json"}
     ]
-    resources = [
-        {"href": manifest_url, "type": "application/audiobook+json"}
-    ]    
     librivox_id = metadata.get('external-identifer') and metadata.get('external-identifer').split('urn:librivox_id:')[1]
     # Call Librivox API to get narrator info ...
     return {
         "@context": "http://readium.org/webpub-manifest/context.jsonld",
         "metadata": {
             "tracks": len(reading_order),
-            "@type": "https://bib.schema.org/Audiobook",
-            "librivox_id": librivox_id,
+            "@type": "https://schema.org/Audiobook",
+            # "@id": librivox_id,  # schema:identifier
             "identifier": '%s/details/%s' % (API_BASEURL, identifier),
             "title": metadata.get('title'),
             "author": metadata.get('creator'),
@@ -162,7 +162,6 @@ def get_book_opds_audio_manifest(identifier, url_root):
             #"modified": "2016-02-18T10:32:18Z",
             "duration": sum(t['duration'] for t in reading_order)
         },
-        "resources": resources,
         "links": links,
         "readingOrder": reading_order
     }
@@ -208,7 +207,7 @@ def get_book_fulltext(identifier, stringio=False):
             return r.content
 
 def get_bookpage_annotations(identifier, page):
-    url = 'https://pragma.archivelab.org/annotations?canvas_id=' 
+    url = 'https://pragma.archivelab.org/annotations?canvas_id='
     url = url + "%s/%s$%s/canvas" % (iiif_url, identifier, page)
     r = requests.get(url)
     return r.json()
@@ -223,7 +222,7 @@ def get_book_annotations(identifier, crosslinks=None):
 def get_scandata_xml(identifier):
     from lxml.etree import fromstring, tostring
     from xmljson import badgerfish as bf
-    location = resolve_server(identifier)    
+    location = resolve_server(identifier)
     server = location['server']
     path = location['dir']
     r = requests.get('%s/download/%s/%s_scandata.xml' % (
@@ -291,7 +290,7 @@ def map_searchinside_to_iiif(identifier, q, idx=0):
     result = get_searchinside_data(identifier, q)
     if result['matches']:
         match = result['matches'][idx]['par'][0]
-        
+
         # left, top, width, height
         width = (match['r'] - match['l'])
         height = (match['b'] - match['t'])
