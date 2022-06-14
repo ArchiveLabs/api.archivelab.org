@@ -10,6 +10,7 @@
     :license: see LICENSE for more details.
 """
 
+import requests
 from flask import request
 from flask.views import MethodView
 from api.archive import wayback_snapshot, wayback_search
