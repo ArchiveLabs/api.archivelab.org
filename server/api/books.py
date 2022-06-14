@@ -259,7 +259,7 @@ class Book(core.Base):
         self.cover_url = 'https://archive.org/services/img/' + self.archive_id
 
 
-    def add_metadata(d):
+    def add_metadata(self, d):
         self.data.update(d)
         flag_modified(self, 'data')
         
