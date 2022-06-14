@@ -339,9 +339,9 @@ def librivox(ocaid):
         if 'librivox.org/' in a['href'] and not a['href'].endswith('.org/'):
             return a['href']
     return None
-    html = requests.get(url).content
-    soup = BeautifulSoup(html, 'html.parser')
-    table = soup.findAll('table', {'class': 'metatable'})[0]
+    # html = requests.get(url).content
+    # soup = BeautifulSoup(html, 'html.parser')
+    # table = soup.findAll('table', {'class': 'metatable'})[0]
 
 
 def download(iid, filename, headers=None):
