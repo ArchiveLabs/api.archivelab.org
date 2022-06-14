@@ -152,7 +152,7 @@ class PageAudio(MethodView):
 
     def post(self, archive_id, page):
         data = request.get_json() or request.form or {'access': None, 'secret': None}
-        pageocr = get_bookpage_ocr(archive_id, page, access=access, secret=secret)
+        pageocr = get_bookpage_ocr(archive_id, page, access=data["access"], secret=data["secret"])
         pagenum = request.args.get('page', '')
         plaintext = '\n'.join([block[0] for block in pageocr])
         if pagenum:
