@@ -14,3 +14,11 @@ Example:
 
 curl -F "img=@stairway.png" http://api.archivelab.org:1234/v2/images
 
+## Restarting Production Server
+
+```
+ssh api.archivelab.org
+tmux
+cd /var/www/api.archivelab.org/server
+uwsgi --ini uwsgi.ini
+```
